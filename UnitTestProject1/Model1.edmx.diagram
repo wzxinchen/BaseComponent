@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+ <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <!-- Diagram content (shape and connector positions) -->
+    <edmx:Diagrams>
+      <Diagram DiagramId="e72d996d59aa41f1800e175d3f6099ce" Name="Diagram1">
+        <EntityTypeShape EntityType="PrivilegeTestModel.Online" Width="1.5" PointX="6" PointY="2.625" />
+        <EntityTypeShape EntityType="PrivilegeTestModel.Sequence" Width="1.5" PointX="0.75" PointY="5" />
+        <EntityTypeShape EntityType="PrivilegeTestModel.SyncDirectory" Width="1.5" PointX="6" PointY="8.5" />
+        <EntityTypeShape EntityType="PrivilegeTestModel.sysdiagram" Width="1.5" PointX="0.75" PointY="8" />
+        <EntityTypeShape EntityType="PrivilegeTestModel.UserDirectory" Width="1.5" PointX="8.25" PointY="6.375" />
+        <EntityTypeShape EntityType="PrivilegeTestModel.UserLogin" Width="1.5" PointX="3.75" PointY="0.75" />
+        <EntityTypeShape EntityType="PrivilegeTestModel.User" Width="1.5" PointX="3.75" PointY="4.125" />
+        <EntityTypeShape EntityType="PrivilegeTestModel.UserSync" Width="1.5" PointX="6" PointY="5.875" />
+        <AssociationConnector Association="PrivilegeTestModel.FK_Onlines_UserLogins" />
+        <AssociationConnector Association="PrivilegeTestModel.FK_Onlines_Users" />
+        <AssociationConnector Association="PrivilegeTestModel.FK_SyncDirectories_Users" />
+        <AssociationConnector Association="PrivilegeTestModel.FK_SyncDirectories_Users1" />
+        <AssociationConnector Association="PrivilegeTestModel.FK_UserDirectories_SyncDirectories" />
+        <AssociationConnector Association="PrivilegeTestModel.FK_UserDirectories_Users" />
+        <AssociationConnector Association="PrivilegeTestModel.FK_UserSyncs_Users" />
+      </Diagram>
+    </edmx:Diagrams>
+  </edmx:Designer>
+</edmx:Edmx>

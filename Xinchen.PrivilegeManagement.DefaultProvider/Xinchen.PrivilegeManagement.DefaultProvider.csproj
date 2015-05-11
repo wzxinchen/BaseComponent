@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0B18A623-84D3-4E1C-9ED4-36AD652D1662}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Xinchen.PrivilegeManagement.DefaultProvider</RootNamespace>
+    <AssemblyName>Xinchen.PrivilegeManagement.DefaultProvider</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Model\Department.cs" />
+    <Compile Include="Model\DepartmentPrivilege.cs" />
+    <Compile Include="Model\Menu.cs" />
+    <Compile Include="Model\Privilege.cs" />
+    <Compile Include="Model\Role.cs" />
+    <Compile Include="Model\RoleMenu.cs" />
+    <Compile Include="Model\RoleMenus.cs" />
+    <Compile Include="Model\RolePrivilege.cs" />
+    <Compile Include="Model\User.cs" />
+    <Compile Include="Model\UserRole.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Xinchen.DbEntity\Xinchen.DbEntity.csproj">
+      <Project>{16508241-dce9-45ed-8088-42304b101039}</Project>
+      <Name>Xinchen.DbEntity</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Xinchen.DbUtils\Xinchen.DbUtils.csproj">
+      <Project>{12c3be5a-0ca9-4429-a14d-e86404f0457b}</Project>
+      <Name>Xinchen.DbUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Xinchen.DynamicObject\Xinchen.DynamicObject.csproj">
+      <Project>{f321b0eb-9c51-428e-97f4-5f8a702ddcc5}</Project>
+      <Name>Xinchen.DynamicObject</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Xinchen.ObjectMapper\Xinchen.ObjectMapper.csproj">
+      <Project>{c892ee99-6935-4a23-b086-2e542ce7e7d0}</Project>
+      <Name>Xinchen.ObjectMapper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Xinchen.PrivilegeManagement\Xinchen.PrivilegeManagement.csproj">
+      <Project>{ed1c6764-e9cb-47fe-8f2a-a1ef7d0646ce}</Project>
+      <Name>Xinchen.PrivilegeManagement</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Xinchen.Utils\Xinchen.Utils.csproj">
+      <Project>{6be86e93-58b7-463a-a4d9-7f7da8a0089a}</Project>
+      <Name>Xinchen.Utils</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Provider\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

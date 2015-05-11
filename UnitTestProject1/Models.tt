@@ -1,0 +1,628 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Data" #>
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Configuration" #>
+<#@ assembly name="System.Windows.Forms" #>
+<#@ assembly name="System.Data.Entity.Design" #>
+<#@ assembly name="EnvDTE" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Configuration" #>
+<#@ import namespace="System.Data" #>
+<#@ import namespace="System.Data.Common" #>
+<#@ import namespace="System.Data.SqlClient" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System.Configuration" #>
+<#@ import namespace="System.Data.Entity.Design.PluralizationServices" #>
+<#@ import namespace="System.Globalization" #>
+<#@ import namespace="System.IO"#>
+<#@  import namespace="System.Windows.Forms" #>
+<#@ import namespace="EnvDTE" #>
+<#@ output extension=".cs" #>
+using System;
+using Xinchen.DbEntity;
+<#
+	string connectionString="data source=.;initial catalog=EGOnline;integrated security=True;MultipleActiveResultSets=True;";
+string ns="UnitTestProject1";
+	string projectDir = Host.ResolveAssemblyReference("$(ProjectDir)");
+	string projectFile = Host.ResolveAssemblyReference("$(ProjectPath)");
+var tables=DbHelper.GetTables(connectionString);
+IServiceProvider serviceProvider = (IServiceProvider)this.Host;
+EnvDTE.DTE dte = (EnvDTE.DTE) serviceProvider.GetService(typeof(EnvDTE.DTE));
+var proj=dte.Solution.FindProjectItem(this.Host.TemplateFile);
+
+//生成表中所有实体
+ foreach(string table in tables)
+{
+	#>
+using System;
+using Xinchen.Utils.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+namespace <#=ns#>
+{
+	[Table("<#=table#>")]
+	public class <#=StringHelper.ToSingular(table)#>
+	{
+		<#
+	string fileName=projectDir+StringHelper.ToSingular(table)+".cs";
+		var columns=DbHelper.GetColumns(connectionString,table);
+		foreach(var column in columns)
+		{
+		#><#=column.IsKey?("[Key]"+Environment.NewLine):""#><#=column.IsAutoIncrement?("		[AutoIncrement]"+Environment.NewLine):""#>		public virtual <#=column.GetTypeString()#> <#=column.Name#> { get; set; }
+<#}#>}
+}
+
+	<#
+File.WriteAllText(fileName,this.GenerationEnvironment.ToString());
+	proj.ProjectItems.AddFromFile(fileName);
+this.GenerationEnvironment.Clear();
+}
+#>
+using Xinchen.XLinq;
+using Xinchen.DbEntity;
+namespace <#=ns#>
+{
+	public partial class EducationGameEntities:EntityContext
+	{
+		public EducationGameEntities():base("test")
+		{}
+	<#
+		//生成表中所有实体
+	foreach(string table in tables)
+{
+	#>	public LinqEntitySet<<#=StringHelper.ToSingular(table)#>> <#=StringHelper.ToPlural(table) #> { get;private set; }
+	<#}
+#>
+	}
+}
+<#
+File.WriteAllText(projectDir+"EducationGameEntities.cs",this.GenerationEnvironment.ToString());
+this.GenerationEnvironment.Clear();
+	proj.ProjectItems.AddFromFile(projectDir+"EducationGameEntities.cs");
+#>
+<#+
+
+public class GenerateTool{
+public static string GetTypeString(Type type)
+    {
+		if(type.Name=="Int32")
+        {
+			return "int?";
+        }else if(type.Name=="DateTime")
+        {
+			return "DateTime?";
+        }else if(type.Name=="Boolean")
+        {
+			return "bool?";
+        }
+		return type.Name.ToString().ToLower();
+    }
+}
+
+public class StringHelper
+    {
+	public static string ToPascal(string str)
+    {
+		return str.Substring(0,1).ToUpper()+str.Substring(1);
+    }
+        /// <summary>
+        /// 单词变成单数形式
+        /// </summary>
+        /// <param name="word"></param>
+        /// <returns></returns>
+        public static string ToSingular(string word)
+        {
+            var service = PluralizationService.CreateService(CultureInfo.CreateSpecificCulture("en-us"));
+            if (service.IsSingular(word))
+            {
+                return word;
+            }
+            return service.Singularize(word);
+        }
+        /// <summary>
+        /// 单词变成复数形式
+        /// </summary>
+        /// <param name="word"></param>
+        /// <returns></returns>
+        public static string ToPlural(string word)
+        {
+            var service = PluralizationService.CreateService(CultureInfo.CreateSpecificCulture("en-us"));
+            if (service.IsPlural(word))
+            {
+                return word;
+            }
+            return service.Pluralize(word);
+        }
+    }
+
+public class Column
+    {
+        public string Name { get; set; }
+        public Type DataType { get; set; }
+
+        public string DataTypeString { get; set; }
+        public int Length { get; set; }
+        public bool IsNullable { get; set; }
+        public bool IsKey { get; set; }
+        public bool IsAutoIncrement { get; set; }
+
+        public string GetTypeString()
+        {
+            if (!DataType.IsValueType)
+            {
+                return DataTypeString;
+            }
+            if (IsNullable)
+            {
+                return DataTypeString + "?";
+            }
+            return DataTypeString;
+        }
+    }
+
+public class DbHelper : IDisposable
+    {
+        private object _lock = new object();
+        protected DbConnection Conn = null;
+        protected string ConnString;
+        protected string ProviderName;
+        private IDbDataAdapter _dda;
+        private DataSet _ds;
+        private IDbCommand _cmd;
+        protected DbProviderFactory DbProviderFactory;
+        private static object _newLock = new object();
+        private static DbHelper _instance;
+        private static Dictionary<Type, DbType> _typeMapper = new Dictionary<Type, DbType>();
+
+        static DbHelper()
+        {
+            TypeMapper.Add(typeof(string), DbType.String);
+            TypeMapper.Add(typeof(DateTime), DbType.DateTime);
+            TypeMapper.Add(typeof(int), DbType.Int32);
+            TypeMapper.Add(typeof(short), DbType.Int16);
+            TypeMapper.Add(typeof(long), DbType.Int64);
+            TypeMapper.Add(typeof(int?), DbType.Int32);
+            TypeMapper.Add(typeof(DateTime?), DbType.DateTime);
+            TypeMapper.Add(typeof(short?), DbType.Int16);
+            TypeMapper.Add(typeof(long?), DbType.Int64);
+            TypeMapper.Add(typeof(decimal), DbType.Decimal);
+            TypeMapper.Add(typeof(decimal?), DbType.Decimal);
+            TypeMapper.Add(typeof(bool), DbType.Boolean);
+            TypeMapper.Add(typeof(bool?), DbType.Boolean);
+        }
+
+        public static Dictionary<Type, DbType> TypeMapper
+        {
+            get { return _typeMapper; }
+        }
+
+        public static DbHelper GetInstance(string connectionString,string providerName)
+        {
+            if (_instance == null)
+            {
+                lock (_newLock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = new DbHelper(connectionString, providerName);
+                    }
+                }
+            }
+
+            return _instance;
+        }
+
+        #region 打开数据库连接
+        private void OpenConn()
+        {
+            if (Conn == null)
+            {
+                Conn = DbProviderFactory.CreateConnection();
+                Conn.ConnectionString = ConnString;
+                Conn.Open();
+            }
+            else
+            {
+                if (Conn.State != ConnectionState.Open)
+                {
+                    Conn.Close();
+                    Conn.ConnectionString = ConnString;
+                    Conn.Open();
+                }
+            }
+        }
+        #endregion
+
+        private DbHelper(string connectionString, string providerName)
+        {
+            ConnString = connectionString;
+            ProviderName = providerName;
+            DbProviderFactory = DbProviderFactories.GetFactory(providerName);
+        }
+
+        public int ExecuteUpdate(string sql)
+        {
+            lock (_lock)
+            {
+                _cmd = DbProviderFactory.CreateCommand();
+                _cmd.CommandText = sql;
+                OpenConn();
+                _cmd.Connection = Conn;
+                int result = 0;
+                using (Conn)
+                {
+                    try
+                    {
+                        result = _cmd.ExecuteNonQuery();
+                    }
+                    finally
+                    {
+                        _cmd.Parameters.Clear();
+                    }
+                }
+                Close();
+                return result;
+            }
+        }
+        public DataSet ExecuteQuery(string sql)
+        {
+            lock (_lock)
+            {
+                _cmd = DbProviderFactory.CreateCommand();
+                _cmd.CommandText = sql;
+                _dda = DbProviderFactory.CreateDataAdapter();
+                _dda.SelectCommand = _cmd;
+                OpenConn();
+                _cmd.Connection = Conn;
+                using (Conn)
+                {
+                    _ds = new DataSet();
+                    try
+                    {
+                        _dda.Fill(_ds);
+                        return _ds;
+                    }
+                    finally
+                    {
+                        _cmd.Parameters.Clear();
+                        Close();
+                    }
+                }
+            }
+        }
+        public DataSet ExecuteQuery(string sql, IEnumerable<IDbDataParameter> dbDataParameter)
+        {
+            lock (_lock)
+            {
+                _cmd = DbProviderFactory.CreateCommand();
+                _cmd.CommandText = sql;
+                foreach (IDbDataParameter sp in dbDataParameter.Where(sp => sp != null))
+                {
+                    _cmd.Parameters.Add(sp);
+                }
+                _dda = DbProviderFactory.CreateDataAdapter();
+                _dda.SelectCommand = _cmd;
+                OpenConn();
+                _cmd.Connection = Conn;
+                using (Conn)
+                {
+                    _ds = new DataSet();
+                    try
+                    {
+                        _dda.Fill(_ds);
+                        return _ds;
+                    }
+                    finally
+                    {
+                        _cmd.Parameters.Clear();
+                        Close();
+                    }
+                }
+            }
+        }
+        public virtual int ExecuteUpdate(string sql, IEnumerable<IDbDataParameter> dbDataParameter)
+        {
+            lock (_lock)
+            {
+                _cmd = DbProviderFactory.CreateCommand();
+                _cmd.CommandText = sql;
+                OpenConn();
+                _cmd.Connection = Conn;
+                int result = 0;
+                using (Conn)
+                {
+                    foreach (IDbDataParameter sp in dbDataParameter.Where(sp => sp != null))
+                    {
+                        _cmd.Parameters.Add(sp);
+                    }
+                    try
+                    {
+                        result = _cmd.ExecuteNonQuery();
+                    }
+                    finally
+                    {
+                        _cmd.Parameters.Clear();
+                    }
+                }
+                Close();
+                return result;
+            }
+        }
+
+        public object ExecuteScalar(string sql)
+        {
+            lock (_lock)
+            {
+                _cmd = DbProviderFactory.CreateCommand();
+                _cmd.CommandText = sql;
+                OpenConn();
+                _cmd.Connection = Conn;
+                using (Conn)
+                {
+                    try
+                    {
+                        object r = _cmd.ExecuteScalar();
+                        return r;
+                    }
+                    finally
+                    {
+                        _cmd.Parameters.Clear();
+                        Close();
+                    }
+                }
+            }
+        }
+        public object ExecuteScalar(string sql, IEnumerable<IDbDataParameter> dbDataParameter)
+        {
+            lock (_lock)
+            {
+                _cmd = DbProviderFactory.CreateCommand();
+                _cmd.CommandText = sql;
+                foreach (IDbDataParameter sp in dbDataParameter.Where(sp => sp != null))
+                {
+                    _cmd.Parameters.Add(sp);
+                }
+                _dda = DbProviderFactory.CreateDataAdapter();
+                _dda.SelectCommand = _cmd;
+                OpenConn();
+                _cmd.Connection = Conn;
+                using (Conn)
+                {
+                    try
+                    {
+                        var r = _cmd.ExecuteScalar();
+                        return r;
+                    }
+                    finally
+                    {
+                        _cmd.Parameters.Clear();
+                        Close();
+                    }
+                }
+            }
+        }
+
+        public int ExecuteCount(string sql, IEnumerable<IDbDataParameter> dbDataParameter)
+        {
+            return Convert.ToInt32(ExecuteScalar(sql, dbDataParameter));
+        }
+
+        public void Close()
+        {
+            if (_ds != null)
+            {
+                try
+                {
+                    _ds.Dispose();
+                    _ds = null;
+                }
+                catch { }
+            }
+            if (this.Conn != null)
+            {
+                try
+                {
+                    Conn.Dispose();
+                    Conn = null;
+                }
+                catch { }
+            }
+            if (this._cmd != null)
+            {
+                try
+                {
+                    this._cmd.Dispose();
+                    this._cmd = null;
+                }
+                catch { }
+            }
+        }
+
+        public void Dispose()
+        {
+            Close();
+        }
+
+        public IDbDataParameter CreateParameter(DbType dbtype, string name, object value)
+        {
+            IDbDataParameter parameter = DbProviderFactory.CreateParameter();
+            parameter.DbType = dbtype;
+            parameter.ParameterName = name;
+            parameter.Value = value;
+            return parameter;
+        }
+
+
+        public IDbDataParameter CreateParameter(string name, DbType dbtype, object value)
+        {
+            IDbDataParameter parameter = DbProviderFactory.CreateParameter();
+            parameter.DbType = dbtype;
+            parameter.ParameterName = name;
+            parameter.Value = value;
+            return parameter;
+        }
+
+        public void ExecuteUpdate(string sql, params IDbDataParameter[] dbParams)
+        {
+            ExecuteUpdate(sql, dbParams.ToList());
+        }
+
+        public DataSet ExecuteQuery(string sql, params IDbDataParameter[] dbParams)
+        {
+            return ExecuteQuery(sql, dbParams.ToList());
+        }
+
+        public object ExecuteScalar(string sql, params IDbDataParameter[] dbParams)
+        {
+            return ExecuteScalar(sql, dbParams.ToList());
+        }
+
+        public int ExecuteCount(string sql, params IDbDataParameter[] dbParams)
+        {
+            return ExecuteCount(sql, dbParams.ToList());
+        }
+
+        public static List<string> GetDataBases(string server)
+        {
+            string connStr = "data source=" + server + ";Integrated Security=True";
+            SqlConnection conn = new SqlConnection(connStr);
+            string strSQL = "select name from sysdatabases where dbid>=5 order by dbid desc";
+            DataSet ds = new DataSet();
+            SqlDataAdapter myCommand = new SqlDataAdapter(strSQL, conn);
+            myCommand.Fill(ds, "database");
+            List<string> databases = new List<string>();
+            foreach (DataRow row in ds.Tables[0].Rows)
+            {
+                databases.Add(row["name"].ToString());
+            }
+            myCommand.Dispose();
+            ds.Dispose();
+            conn.Dispose();
+            return databases;
+        }
+
+		public static List<string> GetTables(string connStr)
+        {
+            string constr = connStr;
+            SqlConnection myConnection = new SqlConnection(constr);
+            //根据选中数据库，得到相应的所有表 
+            string strSQL = "select name from sysobjects where type='" + 'U' + "' and name<>'sysdiagrams'";
+            DataSet ds = new DataSet();
+            SqlDataAdapter myCommand = new SqlDataAdapter(strSQL, myConnection);
+            myCommand.Fill(ds, "table");
+            List<string> tables = new List<string>();
+            foreach (DataRow row in ds.Tables[0].Rows)
+            {
+                tables.Add(row["name"].ToString());
+            }
+            myCommand.Dispose();
+            ds.Dispose();
+            myConnection.Dispose();
+            return tables;
+        }
+
+        public static List<string> GetTables(string server, string database)
+        {
+            string constr = "data source=" + server + ";Initial Catalog=" + database + ";Integrated Security=True";
+            SqlConnection myConnection = new SqlConnection(constr);
+            //根据选中数据库，得到相应的所有表 
+            string strSQL = "select name from sysobjects where type='" + 'U' + "' and name<>'sysdiagrams'";
+            DataSet ds = new DataSet();
+            SqlDataAdapter myCommand = new SqlDataAdapter(strSQL, myConnection);
+            myCommand.Fill(ds, "table");
+            List<string> tables = new List<string>();
+            foreach (DataRow row in ds.Tables[0].Rows)
+            {
+                tables.Add(row["name"].ToString());
+            }
+            myCommand.Dispose();
+            ds.Dispose();
+            myConnection.Dispose();
+            return tables;
+        }
+
+        public static List<Column> GetColumns(string connStr, string tableName)
+        {
+            string sql =
+                @"SELECT  * ,
+                        ISNULL(( SELECT COUNT(1)
+                                 FROM   SYSCOLUMNS ,
+                                        SYSOBJECTS ,
+                                        SYSINDEXES ,
+                                        SYSINDEXKEYS
+                                 WHERE  SYSCOLUMNS.id = sc.id
+                                        AND SYSOBJECTS.xtype = 'PK'
+                                        AND SYSOBJECTS.parent_obj = SYSCOLUMNS.id
+                                        AND SYSINDEXES.id = SYSCOLUMNS.id
+                                        AND SYSOBJECTS.name = SYSINDEXES.name
+                                        AND SYSINDEXKEYS.id = SYSCOLUMNS.id
+                                        AND SYSINDEXKEYS.indid = SYSINDEXES.indid
+                                        AND SYSCOLUMNS.colid = SYSINDEXKEYS.colid
+                                        AND syscolumns.NAME = sc.name
+                               ), 0) iskey
+                FROM    syscolumns sc
+                WHERE   ( id = ( SELECT id
+                                 FROM   sysobjects
+                                 WHERE  ( id = OBJECT_ID('" + tableName + @"') )
+                               ) )ORDER BY colid";
+            SqlConnection myConnection = new SqlConnection(connStr);
+            //根据选中数据库，得到相应的所有表 
+            DataSet ds = new DataSet();
+            SqlDataAdapter myCommand = new SqlDataAdapter(sql, myConnection);
+            myCommand.Fill(ds, "table");
+            List<Column> columns = new List<Column>();
+            foreach (DataRow row in ds.Tables[0].Rows)
+            {
+                Column col = new Column();
+                col.IsNullable = Convert.ToBoolean(row["isnullable"]);
+                switch (Convert.ToInt32(row["xtype"]))
+                {
+                    case 56:
+                        col.DataType = typeof(int);
+                        col.DataTypeString = "int";
+                        break;
+                    case 231:
+                    case 35:
+                    case 167:
+						case 239:
+                        col.DataType = typeof(string);
+                        col.DataTypeString = "string";
+                        break;
+                    case 61:
+						case 42:
+                        col.DataType = typeof(DateTime);
+                        col.DataTypeString = "DateTime";
+                        break;
+                    case 106:
+                        col.DataType = typeof(decimal);
+                        col.DataTypeString = "decimal";
+                        break;
+                    case 104:
+                        col.DataType = typeof(bool);
+                        col.DataTypeString = "bool";
+                        break;
+                    default:
+                        throw new NotImplementedException("不支持指定类型：" + row["xtype"].ToString());
+                }
+                col.Length = Convert.ToInt32(row["length"]);
+                col.Name = row["name"].ToString();
+                col.IsAutoIncrement = Convert.ToBoolean(row["colstat"]);
+                col.IsKey = Convert.ToBoolean(row["iskey"]);
+                columns.Add(col);
+            }
+            myCommand.Dispose();
+            ds.Dispose();
+            myConnection.Dispose();
+            return columns;
+
+        }
+    }
+
+#>

@@ -1,0 +1,566 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="PrivilegeTestModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="Onlines">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="UserId" Type="int" Nullable="false" />
+          <Property Name="LoginId" Type="int" Nullable="false" />
+          <Property Name="Status" Type="nvarchar" MaxLength="50" />
+        </EntityType>
+        <EntityType Name="Sequences">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Count" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="SyncDirectories">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Path" Type="nvarchar" MaxLength="500" Nullable="false" />
+          <Property Name="LastUpdateTime" Type="datetime" />
+          <Property Name="LastUpdateUserId" Type="int" />
+          <Property Name="ExcludePaths" Type="nvarchar" MaxLength="4000" />
+          <Property Name="UpdatingUserId" Type="int" />
+        </EntityType>
+        <EntityType Name="sysdiagrams">
+          <Key>
+            <PropertyRef Name="diagram_id" />
+          </Key>
+          <Property Name="name" Type="nvarchar" MaxLength="128" Nullable="false" />
+          <Property Name="principal_id" Type="int" Nullable="false" />
+          <Property Name="diagram_id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="version" Type="int" />
+          <Property Name="definition" Type="varbinary(max)" />
+        </EntityType>
+        <EntityType Name="UserDirectories">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Location" Type="nvarchar" MaxLength="500" Nullable="false" />
+          <Property Name="SyncDirectoryId" Type="int" Nullable="false" />
+          <Property Name="ExcludePaths" Type="nvarchar" MaxLength="500" />
+          <Property Name="UserId" Type="int" Nullable="false" />
+          <Property Name="LastUpdateTime" Type="datetime" />
+        </EntityType>
+        <EntityType Name="UserLogins">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="UserId" Type="int" Nullable="false" />
+          <Property Name="LoginTime" Type="datetime" Nullable="false" />
+          <Property Name="LogoutTime" Type="datetime" />
+        </EntityType>
+        <EntityType Name="Users">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Username" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Password" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="CreateTime" Type="datetime" Nullable="false" />
+          <Property Name="Enabled" Type="bit" Nullable="false" />
+          <Property Name="Location" Type="nvarchar" MaxLength="500" />
+        </EntityType>
+        <EntityType Name="UserSyncs">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="UserId" Type="int" Nullable="false" />
+          <Property Name="StartTime" Type="datetime" Nullable="false" />
+          <Property Name="EndTime" Type="datetime" />
+        </EntityType>
+        <Association Name="FK_Onlines_UserLogins">
+          <End Role="UserLogins" Type="Self.UserLogins" Multiplicity="1" />
+          <End Role="Onlines" Type="Self.Onlines" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UserLogins">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Onlines">
+              <PropertyRef Name="LoginId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Onlines_Users">
+          <End Role="Users" Type="Self.Users" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="Onlines" Type="Self.Onlines" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Users">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Onlines">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SyncDirectories_Users">
+          <End Role="Users" Type="Self.Users" Multiplicity="0..1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="SyncDirectories" Type="Self.SyncDirectories" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Users">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="SyncDirectories">
+              <PropertyRef Name="LastUpdateUserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SyncDirectories_Users1">
+          <End Role="Users" Type="Self.Users" Multiplicity="0..1" />
+          <End Role="SyncDirectories" Type="Self.SyncDirectories" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Users">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="SyncDirectories">
+              <PropertyRef Name="UpdatingUserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UserDirectories_SyncDirectories">
+          <End Role="SyncDirectories" Type="Self.SyncDirectories" Multiplicity="1" />
+          <End Role="UserDirectories" Type="Self.UserDirectories" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="SyncDirectories">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="UserDirectories">
+              <PropertyRef Name="SyncDirectoryId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UserDirectories_Users">
+          <End Role="Users" Type="Self.Users" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="UserDirectories" Type="Self.UserDirectories" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Users">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="UserDirectories">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UserSyncs_Users">
+          <End Role="Users" Type="Self.Users" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="UserSyncs" Type="Self.UserSyncs" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Users">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="UserSyncs">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="PrivilegeTestModelStoreContainer">
+          <EntitySet Name="Onlines" EntityType="Self.Onlines" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Sequences" EntityType="Self.Sequences" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="SyncDirectories" EntityType="Self.SyncDirectories" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="UserDirectories" EntityType="Self.UserDirectories" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="UserLogins" EntityType="Self.UserLogins" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Users" EntityType="Self.Users" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="UserSyncs" EntityType="Self.UserSyncs" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK_Onlines_UserLogins" Association="Self.FK_Onlines_UserLogins">
+            <End Role="UserLogins" EntitySet="UserLogins" />
+            <End Role="Onlines" EntitySet="Onlines" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Onlines_Users" Association="Self.FK_Onlines_Users">
+            <End Role="Users" EntitySet="Users" />
+            <End Role="Onlines" EntitySet="Onlines" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SyncDirectories_Users" Association="Self.FK_SyncDirectories_Users">
+            <End Role="Users" EntitySet="Users" />
+            <End Role="SyncDirectories" EntitySet="SyncDirectories" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SyncDirectories_Users1" Association="Self.FK_SyncDirectories_Users1">
+            <End Role="Users" EntitySet="Users" />
+            <End Role="SyncDirectories" EntitySet="SyncDirectories" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UserDirectories_SyncDirectories" Association="Self.FK_UserDirectories_SyncDirectories">
+            <End Role="SyncDirectories" EntitySet="SyncDirectories" />
+            <End Role="UserDirectories" EntitySet="UserDirectories" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UserDirectories_Users" Association="Self.FK_UserDirectories_Users">
+            <End Role="Users" EntitySet="Users" />
+            <End Role="UserDirectories" EntitySet="UserDirectories" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UserSyncs_Users" Association="Self.FK_UserSyncs_Users">
+            <End Role="Users" EntitySet="Users" />
+            <End Role="UserSyncs" EntitySet="UserSyncs" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="PrivilegeTestModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityContainer Name="PrivilegeTestEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="Onlines" EntityType="PrivilegeTestModel.Online" />
+          <EntitySet Name="Sequences" EntityType="PrivilegeTestModel.Sequence" />
+          <EntitySet Name="SyncDirectories" EntityType="PrivilegeTestModel.SyncDirectory" />
+          <EntitySet Name="sysdiagrams" EntityType="PrivilegeTestModel.sysdiagram" />
+          <EntitySet Name="UserDirectories" EntityType="PrivilegeTestModel.UserDirectory" />
+          <EntitySet Name="UserLogins" EntityType="PrivilegeTestModel.UserLogin" />
+          <EntitySet Name="Users" EntityType="PrivilegeTestModel.User" />
+          <EntitySet Name="UserSyncs" EntityType="PrivilegeTestModel.UserSync" />
+          <AssociationSet Name="FK_Onlines_UserLogins" Association="PrivilegeTestModel.FK_Onlines_UserLogins">
+            <End Role="UserLogin" EntitySet="UserLogins" />
+            <End Role="Online" EntitySet="Onlines" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Onlines_Users" Association="PrivilegeTestModel.FK_Onlines_Users">
+            <End Role="User" EntitySet="Users" />
+            <End Role="Online" EntitySet="Onlines" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SyncDirectories_Users" Association="PrivilegeTestModel.FK_SyncDirectories_Users">
+            <End Role="User" EntitySet="Users" />
+            <End Role="SyncDirectory" EntitySet="SyncDirectories" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SyncDirectories_Users1" Association="PrivilegeTestModel.FK_SyncDirectories_Users1">
+            <End Role="User" EntitySet="Users" />
+            <End Role="SyncDirectory" EntitySet="SyncDirectories" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UserDirectories_SyncDirectories" Association="PrivilegeTestModel.FK_UserDirectories_SyncDirectories">
+            <End Role="SyncDirectory" EntitySet="SyncDirectories" />
+            <End Role="UserDirectory" EntitySet="UserDirectories" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UserDirectories_Users" Association="PrivilegeTestModel.FK_UserDirectories_Users">
+            <End Role="User" EntitySet="Users" />
+            <End Role="UserDirectory" EntitySet="UserDirectories" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UserSyncs_Users" Association="PrivilegeTestModel.FK_UserSyncs_Users">
+            <End Role="User" EntitySet="Users" />
+            <End Role="UserSync" EntitySet="UserSyncs" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="Online">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="UserId" Type="Int32" Nullable="false" />
+          <Property Name="LoginId" Type="Int32" Nullable="false" />
+          <Property Name="Status" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="UserLogin" Relationship="PrivilegeTestModel.FK_Onlines_UserLogins" FromRole="Online" ToRole="UserLogin" />
+          <NavigationProperty Name="User" Relationship="PrivilegeTestModel.FK_Onlines_Users" FromRole="Online" ToRole="User" />
+        </EntityType>
+        <EntityType Name="Sequence">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Count" Type="Int32" Nullable="false" />
+        </EntityType>
+        <EntityType Name="SyncDirectory">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Path" Type="String" Nullable="false" MaxLength="500" FixedLength="false" Unicode="true" />
+          <Property Name="LastUpdateTime" Type="DateTime" Precision="3" />
+          <Property Name="LastUpdateUserId" Type="Int32" />
+          <Property Name="ExcludePaths" Type="String" MaxLength="4000" FixedLength="false" Unicode="true" />
+          <Property Name="UpdatingUserId" Type="Int32" />
+          <NavigationProperty Name="User" Relationship="PrivilegeTestModel.FK_SyncDirectories_Users" FromRole="SyncDirectory" ToRole="User" />
+          <NavigationProperty Name="User1" Relationship="PrivilegeTestModel.FK_SyncDirectories_Users1" FromRole="SyncDirectory" ToRole="User" />
+          <NavigationProperty Name="UserDirectories" Relationship="PrivilegeTestModel.FK_UserDirectories_SyncDirectories" FromRole="SyncDirectory" ToRole="UserDirectory" />
+        </EntityType>
+        <EntityType Name="sysdiagram">
+          <Key>
+            <PropertyRef Name="diagram_id" />
+          </Key>
+          <Property Name="name" Type="String" Nullable="false" MaxLength="128" FixedLength="false" Unicode="true" />
+          <Property Name="principal_id" Type="Int32" Nullable="false" />
+          <Property Name="diagram_id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="version" Type="Int32" />
+          <Property Name="definition" Type="Binary" MaxLength="Max" FixedLength="false" />
+        </EntityType>
+        <EntityType Name="UserDirectory">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Location" Type="String" Nullable="false" MaxLength="500" FixedLength="false" Unicode="true" />
+          <Property Name="SyncDirectoryId" Type="Int32" Nullable="false" />
+          <Property Name="ExcludePaths" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
+          <Property Name="UserId" Type="Int32" Nullable="false" />
+          <Property Name="LastUpdateTime" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="SyncDirectory" Relationship="PrivilegeTestModel.FK_UserDirectories_SyncDirectories" FromRole="UserDirectory" ToRole="SyncDirectory" />
+          <NavigationProperty Name="User" Relationship="PrivilegeTestModel.FK_UserDirectories_Users" FromRole="UserDirectory" ToRole="User" />
+        </EntityType>
+        <EntityType Name="UserLogin">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="UserId" Type="Int32" Nullable="false" />
+          <Property Name="LoginTime" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="LogoutTime" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="Onlines" Relationship="PrivilegeTestModel.FK_Onlines_UserLogins" FromRole="UserLogin" ToRole="Online" />
+        </EntityType>
+        <EntityType Name="User">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" />
+          <Property Name="Username" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Password" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="CreateTime" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="Enabled" Type="Boolean" Nullable="false" />
+          <Property Name="Location" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Onlines" Relationship="PrivilegeTestModel.FK_Onlines_Users" FromRole="User" ToRole="Online" />
+          <NavigationProperty Name="SyncDirectories" Relationship="PrivilegeTestModel.FK_SyncDirectories_Users" FromRole="User" ToRole="SyncDirectory" />
+          <NavigationProperty Name="SyncDirectories1" Relationship="PrivilegeTestModel.FK_SyncDirectories_Users1" FromRole="User" ToRole="SyncDirectory" />
+          <NavigationProperty Name="UserDirectories" Relationship="PrivilegeTestModel.FK_UserDirectories_Users" FromRole="User" ToRole="UserDirectory" />
+          <NavigationProperty Name="UserSyncs" Relationship="PrivilegeTestModel.FK_UserSyncs_Users" FromRole="User" ToRole="UserSync" />
+        </EntityType>
+        <EntityType Name="UserSync">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="UserId" Type="Int32" Nullable="false" />
+          <Property Name="StartTime" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="EndTime" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="User" Relationship="PrivilegeTestModel.FK_UserSyncs_Users" FromRole="UserSync" ToRole="User" />
+        </EntityType>
+        <Association Name="FK_Onlines_UserLogins">
+          <End Type="PrivilegeTestModel.UserLogin" Role="UserLogin" Multiplicity="1" />
+          <End Type="PrivilegeTestModel.Online" Role="Online" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UserLogin">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Online">
+              <PropertyRef Name="LoginId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Onlines_Users">
+          <End Type="PrivilegeTestModel.User" Role="User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="PrivilegeTestModel.Online" Role="Online" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Online">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SyncDirectories_Users">
+          <End Type="PrivilegeTestModel.User" Role="User" Multiplicity="0..1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="PrivilegeTestModel.SyncDirectory" Role="SyncDirectory" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="SyncDirectory">
+              <PropertyRef Name="LastUpdateUserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SyncDirectories_Users1">
+          <End Type="PrivilegeTestModel.User" Role="User" Multiplicity="0..1" />
+          <End Type="PrivilegeTestModel.SyncDirectory" Role="SyncDirectory" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="SyncDirectory">
+              <PropertyRef Name="UpdatingUserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UserDirectories_SyncDirectories">
+          <End Type="PrivilegeTestModel.SyncDirectory" Role="SyncDirectory" Multiplicity="1" />
+          <End Type="PrivilegeTestModel.UserDirectory" Role="UserDirectory" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="SyncDirectory">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="UserDirectory">
+              <PropertyRef Name="SyncDirectoryId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UserDirectories_Users">
+          <End Type="PrivilegeTestModel.User" Role="User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="PrivilegeTestModel.UserDirectory" Role="UserDirectory" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="UserDirectory">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UserSyncs_Users">
+          <End Type="PrivilegeTestModel.User" Role="User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="PrivilegeTestModel.UserSync" Role="UserSync" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="UserSync">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="PrivilegeTestModelStoreContainer" CdmEntityContainer="PrivilegeTestEntities">
+        <EntitySetMapping Name="Onlines">
+            <EntityTypeMapping TypeName="PrivilegeTestModel.Online">
+              <MappingFragment StoreEntitySet="Onlines">
+                <ScalarProperty Name="Status" ColumnName="Status" />
+                <ScalarProperty Name="LoginId" ColumnName="LoginId" />
+                <ScalarProperty Name="UserId" ColumnName="UserId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Sequences">
+            <EntityTypeMapping TypeName="PrivilegeTestModel.Sequence">
+              <MappingFragment StoreEntitySet="Sequences">
+                <ScalarProperty Name="Count" ColumnName="Count" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="SyncDirectories">
+            <EntityTypeMapping TypeName="PrivilegeTestModel.SyncDirectory">
+              <MappingFragment StoreEntitySet="SyncDirectories">
+                <ScalarProperty Name="UpdatingUserId" ColumnName="UpdatingUserId" />
+                <ScalarProperty Name="ExcludePaths" ColumnName="ExcludePaths" />
+                <ScalarProperty Name="LastUpdateUserId" ColumnName="LastUpdateUserId" />
+                <ScalarProperty Name="LastUpdateTime" ColumnName="LastUpdateTime" />
+                <ScalarProperty Name="Path" ColumnName="Path" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="sysdiagrams">
+            <EntityTypeMapping TypeName="PrivilegeTestModel.sysdiagram">
+              <MappingFragment StoreEntitySet="sysdiagrams">
+                <ScalarProperty Name="definition" ColumnName="definition" />
+                <ScalarProperty Name="version" ColumnName="version" />
+                <ScalarProperty Name="diagram_id" ColumnName="diagram_id" />
+                <ScalarProperty Name="principal_id" ColumnName="principal_id" />
+                <ScalarProperty Name="name" ColumnName="name" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="UserDirectories">
+            <EntityTypeMapping TypeName="PrivilegeTestModel.UserDirectory">
+              <MappingFragment StoreEntitySet="UserDirectories">
+                <ScalarProperty Name="LastUpdateTime" ColumnName="LastUpdateTime" />
+                <ScalarProperty Name="UserId" ColumnName="UserId" />
+                <ScalarProperty Name="ExcludePaths" ColumnName="ExcludePaths" />
+                <ScalarProperty Name="SyncDirectoryId" ColumnName="SyncDirectoryId" />
+                <ScalarProperty Name="Location" ColumnName="Location" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="UserLogins">
+            <EntityTypeMapping TypeName="PrivilegeTestModel.UserLogin">
+              <MappingFragment StoreEntitySet="UserLogins">
+                <ScalarProperty Name="LogoutTime" ColumnName="LogoutTime" />
+                <ScalarProperty Name="LoginTime" ColumnName="LoginTime" />
+                <ScalarProperty Name="UserId" ColumnName="UserId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Users">
+            <EntityTypeMapping TypeName="PrivilegeTestModel.User">
+              <MappingFragment StoreEntitySet="Users">
+                <ScalarProperty Name="Location" ColumnName="Location" />
+                <ScalarProperty Name="Enabled" ColumnName="Enabled" />
+                <ScalarProperty Name="CreateTime" ColumnName="CreateTime" />
+                <ScalarProperty Name="Password" ColumnName="Password" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Username" ColumnName="Username" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="UserSyncs">
+            <EntityTypeMapping TypeName="PrivilegeTestModel.UserSync">
+              <MappingFragment StoreEntitySet="UserSyncs">
+                <ScalarProperty Name="EndTime" ColumnName="EndTime" />
+                <ScalarProperty Name="StartTime" ColumnName="StartTime" />
+                <ScalarProperty Name="UserId" ColumnName="UserId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="true" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="无" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

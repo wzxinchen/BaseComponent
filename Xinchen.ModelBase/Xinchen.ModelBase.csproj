@@ -47,6 +47,7 @@
     <Compile Include="AddKeyModel.cs" />
     <Compile Include="KeyValueModel.cs" />
     <Compile Include="LoginModel.cs" />
+    <Compile Include="PagerModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RegAdminModel.cs" />
     <Compile Include="UpdateKeyModel.cs" />

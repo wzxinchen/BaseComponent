@@ -68,7 +68,7 @@ namespace ChinhDo.Transactions
 
         /// <summary>Deletes the specified file. An exception is not thrown if the file does not exist.</summary>
         /// <param name="path">The file to be deleted.</param>
-        public void Delete(string path)
+        public void DeleteFile(string path)
         {
             if (IsInTransaction())
             {

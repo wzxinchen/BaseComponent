@@ -34,7 +34,7 @@ namespace ChinhDo.Transactions
         /// Deletes the specified file. An exception is not thrown if the file does not exist.
         /// </summary>
         /// <param name="path">The file to be deleted.</param>
-        void Delete(string path);
+        void DeleteFile(string path);
 
         /// <summary>
         /// Deletes the specified directory and all its contents. An exception is not thrown if the directory does not exist.

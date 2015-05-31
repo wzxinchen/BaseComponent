@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xinchen.XLinq", "Xinchen.XL
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChinhDo.Transactions.FileManager", "ChinhDo.Transactions.FileManager\ChinhDo.Transactions.FileManager.csproj", "{E824ACBB-90C8-4C60-9D52-9C8020E98E3E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xinchen.ApplicationBase.Mvc", "Xinchen.ApplicationBase.Mvc\Xinchen.ApplicationBase.Mvc.csproj", "{C920153C-3ABD-4A45-BE67-0541895C5CB0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -121,6 +123,10 @@ Global
 		{E824ACBB-90C8-4C60-9D52-9C8020E98E3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E824ACBB-90C8-4C60-9D52-9C8020E98E3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E824ACBB-90C8-4C60-9D52-9C8020E98E3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C920153C-3ABD-4A45-BE67-0541895C5CB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C920153C-3ABD-4A45-BE67-0541895C5CB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C920153C-3ABD-4A45-BE67-0541895C5CB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C920153C-3ABD-4A45-BE67-0541895C5CB0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -139,6 +145,7 @@ Global
 		{69C46E2E-9C57-4DFE-BD06-0B41D74AC997} = {E91926C9-CD25-4860-9DBF-1519FDDE0D92}
 		{C892EE99-6935-4A23-B086-2E542CE7E7D0} = {9BB73CCF-53CA-4864-9347-446BC24B8715}
 		{D3B89B15-0A03-4C61-B722-8AC59F0D13EB} = {7ACC89C7-598F-449F-9FE5-5B5C5C4D4D6F}
+		{C920153C-3ABD-4A45-BE67-0541895C5CB0} = {A1EABB62-30E0-41FF-B6F9-00FB67BB9053}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .

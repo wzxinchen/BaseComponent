@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="BaseBLL.cs" />
     <Compile Include="BaseDAL.cs" />
+    <Compile Include="BaseEntity.cs" />
     <Compile Include="Direction.cs" />
     <Compile Include="DynamicSqlParam.cs" />
     <Compile Include="DynamicSqlParamType.cs" />

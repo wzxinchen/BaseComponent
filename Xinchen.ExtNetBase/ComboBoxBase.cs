@@ -27,7 +27,7 @@ namespace Xinchen.ExtNetBase
             }
         }
 
-        public void DataBind()
+        public void BindData()
         {
             _store.DataBind();
         }

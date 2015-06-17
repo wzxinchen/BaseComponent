@@ -42,6 +42,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EmitReflection\Extension.cs" />
+    <Compile Include="EmitReflection\IPropertyAccessor.cs" />
+    <Compile Include="EmitReflection\PropertyInfo.cs" />
+    <Compile Include="EmitReflection\Type.cs" />
     <Compile Include="ExpressionReflector.cs" />
     <Compile Include="DynamicProxy.cs" />
     <Compile Include="ExpressionReflectorCore.cs" />

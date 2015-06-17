@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -23,17 +25,21 @@ namespace Xinchen.DbUtils
         /// 搜索参数值
         /// </summary>
         public object Value { get; set; }
+        public T GetValue<T>()
+        {
+            return (T)Convert.ChangeType(Value, typeof(T));
+        }
 
         public override string ToString()
         {
-            ParameterName = Name.Replace(".","") + Guid.NewGuid().ToString().Replace("-", "");
+            //ParameterName = Name + new Random().Next(100000);
             if (Value == null)
             {
-                return string.Format("{0} is null", Name);
+                return string.Format("@0 == null", Name);
             }
-            if (Value is IList<int> || Value is IList<short> || Value is IList<long> || Value is IList<decimal> || Value is IList<double> || Value is IList<float>)
+            if (Value is IEnumerable)
             {
-                return string.Format("{0} in ({1})", Name, string.Join(",", Value as IList<int>));
+                return string.Format("@0.Contains({0})", Name);
             }
             else
             {
@@ -64,9 +70,9 @@ namespace Xinchen.DbUtils
                 }
                 if (op == "like")
                 {
-                    return string.Format("{0} {1} '%'+@{2}+'%'", Name, op, ParameterName);
+                    return string.Format("{0}.Contains(@0)", Name);
                 }
-                return string.Format("{0} {1} @{2}", Name, op, ParameterName);
+                return string.Format("{0} {1} @0", Name, op);
             }
         }
     }
@@ -88,7 +94,7 @@ namespace Xinchen.DbUtils
 
     public enum SortOrder
     {
-        DESC, ASC
+        DESCENDING, ASC
     }
 
     public class FilterLinked

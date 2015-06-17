@@ -1,6 +1,7 @@
 ﻿namespace Xinchen.PrivilegeManagement.DTO
 {
     using System;
+    using System.ComponentModel.DataAnnotations;
     using System.ComponentModel.DataAnnotations.Schema;
     using System.Runtime.CompilerServices;
     using Xinchen.PrivilegeManagement.Enums;
@@ -17,6 +18,7 @@
 
         public virtual BaseStatuses Status { get; set; }
 
+        [Key,DatabaseGenerated(DatabaseGeneratedOption.None)]
         public virtual int Id { get; set; }
 
         public virtual string Password { get; set; }

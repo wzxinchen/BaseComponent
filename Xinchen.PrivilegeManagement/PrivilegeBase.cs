@@ -12,7 +12,8 @@
     using Xinchen.PrivilegeManagement.ViewModel;
     using Xinchen.Utils;
     using Xinchen.Utils.DataAnnotations;
-
+    using System.Linq.Expressions;
+    using Xinchen.DbUtils;
     public class PrivilegeBase
     {
         private HttpContext _httpContext = HttpContext.Current;
@@ -98,7 +99,7 @@
                     Username = username,
                     Status = enabled,
                     Password = StringHelper.EncodePassword(username, "123456"),
-                    //Id = this.PrivilegeContextProvider.UserProvider.GetUniqueId(),
+                    Id = this.PrivilegeContextProvider.GetRepository().Use<User>().GetSequenceId(),
                     CreateTime = DateTime.Now,
                     Description = description
                 };
@@ -120,7 +121,6 @@
             var reps = ConfigManager.PrivilegeProvider.GetRepository();
             reps.Use<UserRole>().Add(entity);
             reps.SaveChanges();
-            reps.Dispose();
         }
 
         public void ChangePassword(string oldPwd, string pwd, string newpwd)
@@ -170,7 +170,7 @@
             }
             if (this._httpContext.Session["UserInfo"] == null)
             {
-                if (!this.IsLoginPage())
+                if (!this.IsLoginPage() && !IsVerifyImagePage())
                 {
                     string loginPage = ConfigManager.PrivilegeProvider.LoginPage;
                     if (loginPage.Contains("{url}"))
@@ -385,26 +385,54 @@
 
         public IList<Role> GetUserNotHaveRoles(int _userId)
         {
-            return this.PrivilegeContextProvider.GetRepository().Queries<Role>("SELECT  roles.Id ,\r\n        roles.Name ,\r\n        roles.DepartmentId ,\r\n        roles.Status ,\r\n        roles.Description\r\nFROM    dbo.Roles roles\r\nWHERE   roles.Id NOT IN ( SELECT    RoleId\r\n                          FROM      dbo.UserRoles\r\n                          WHERE     UserId = " + _userId + ")");
+            var repo = PrivilegeContextProvider.GetRepository();
+            var roleIds = repo.Use<UserRole>().GetList(x => x.UserId == _userId).Select(x => x.RoleId);
+            return repo.Use<Role>().GetList(x => !roleIds.Contains(x.Id));
+            //return this.PrivilegeContextProvider.GetRepository().Queries<Role>("SELECT  roles.Id ,\r\n        roles.Name ,\r\n        roles.DepartmentId ,\r\n        roles.Status ,\r\n        roles.Description\r\nFROM    dbo.Roles roles\r\nWHERE   roles.Id NOT IN ( SELECT    RoleId\r\n                          FROM      dbo.UserRoles\r\n                          WHERE     UserId = " + _userId + ")");
         }
 
         public IList<Role> GetUserRoles(int _userId)
         {
-            return this.PrivilegeContextProvider.GetRepository().Queries<Role>("SELECT roles.Id ,\r\n              roles.Name ,\r\n              roles.DepartmentId ,\r\n              roles.Status,\r\n              roles.Description FROM dbo.Roles roles\r\n       INNER JOIN dbo.UserRoles userRoles ON userRoles.RoleId = roles.Id\r\n       WHERE userRoles.UserId=" + _userId);
+            var repo = PrivilegeContextProvider.GetRepository();
+            var roleIds = repo.Use<UserRole>().GetList(x => x.UserId == _userId).Select(x => x.RoleId);
+            return repo.Use<Role>().GetList(x => roleIds.Contains(x.Id));
         }
 
-        public IList<UserRoleInfo> GetUsers(int page, int limit, out int recordCount, string condition, string sort, params object[] parameters)
+
+        public IList<UserRole> GetUserRoles()
         {
-            var pr = PrivilegeContextProvider.GetRepository().Use<User>().Page(page, limit, x => x.Select(y => new UserRoleInfo()
+            return this.PrivilegeContextProvider.GetRepository().Use<UserRole>().Query.ToList();
+        }
+
+        public PageResult<UserRoleDetailInfo> GetUsers(int page, int limit, int[] rolesId, Func<IQueryable<UserRoleDetailInfo>, IQueryable<UserRoleDetailInfo>> filter)
+        {
+            var repo = PrivilegeContextProvider.GetRepository();
+            var pr = repo.Use<User>().Page(page, limit, x =>
             {
-                CreateTime = y.CreateTime,
-                Description = y.Description,
-                Id = y.Id,
-                Status = y.Status,
-                Username = y.Username
-            }));
-            recordCount = pr.RecordCount;
-            return pr.Data;
+                var filterRoles = rolesId != null && rolesId.Count() > 0;
+                if (rolesId == null)
+                {
+                    rolesId = new int[0];
+                }
+                var q = (from user in x
+                         join userRole in repo.Use<UserRole>().Query on user.Id equals userRole.UserId into us
+                         from u in us.DefaultIfEmpty()
+                         where !filterRoles || rolesId.Contains(u.RoleId)
+                         select new UserRoleDetailInfo()
+                         {
+                             CreateTime = user.CreateTime,
+                             Description = user.Description,
+                             Id = user.Id,
+                             Status = user.Status,
+                             Username = user.Username
+                         }).Distinct();
+                if (filter != null)
+                {
+                    q = filter(q);
+                }
+                return q;
+            });
+            return pr;
             //            string sql = @"SELECT DISTINCT users.Id ,
             //                    Username ,
             //        users. CreateTime,
@@ -419,6 +447,11 @@
         public bool IsLoginPage()
         {
             return this.IsLoginPage(this._httpContext.Request.Url.ToString());
+        }
+
+        public bool IsVerifyImagePage()
+        {
+            return _httpContext.Request.Url.ToString().ToLower().Contains("/account/verifyimage");
         }
 
         public bool IsLoginPage(string url)
@@ -545,7 +578,7 @@
             string[] names = Enum.GetNames(enumType);
             Array values = Enum.GetValues(enumType);
             int length = names.Length;
-            HashSet<string> set = new HashSet<string>();
+            var set = new HashSet<string>();
             for (num2 = 0; num2 < length; num2++)
             {
                 if (set.Contains(names[num2]))
@@ -557,6 +590,17 @@
             using (TransactionScope scope = new TransactionScope())
             {
                 var privilegeProvider = ConfigManager.PrivilegeProvider.GetRepository();
+                var sysRole = privilegeProvider.Use<Role>().Get(x => x.Name == ConfigManager.PrivilegeProvider.SystemRoleName);
+                Dictionary<int, Privilege> sysRolePrivileges = new Dictionary<int, Privilege>();
+                if (sysRole != null)
+                {
+                    sysRolePrivileges =
+                        (from rp in privilegeProvider.Use<RolePrivilege>().Query
+                         join p in privilegeProvider.Use<Privilege>().Query on rp.PrivilegeId equals p.Id
+                         join r in privilegeProvider.Use<Role>().Query on rp.RoleId equals r.Id
+                         where r.Name == sysRole.Name
+                         select p).ToDictionary(x => x.Id);
+                }
                 for (num2 = 0; num2 < length; num2++)
                 {
                     Privilege privilege;
@@ -565,8 +609,6 @@
                     PrivilegeDescriptionAttribute attribute = AttributeHelper.GetAttribute<PrivilegeDescriptionAttribute>(enumType.GetField(name));
                     if (privilegeProvider.Use<Privilege>().Any(x => x.Id == id))
                     {
-                        //int? menuId;
-                        //int? nullable2;
                         privilege = privilegeProvider.Use<Privilege>().Get(x => x.Id == id);
                         if ((privilege.Name != name)
                             || ((attribute != null) && ((attribute.Description != privilege.Description))))
@@ -584,6 +626,15 @@
                             Id = id
                         };
                         privilegeProvider.Use<Privilege>().Add(privilege);
+                    }
+                    if (!sysRolePrivileges.ContainsKey(privilege.Id))
+                    {
+                        var rolePrivilege = new RolePrivilege()
+                        {
+                            RoleId = sysRole.Id,
+                            PrivilegeId = privilege.Id
+                        };
+                        privilegeProvider.Use<RolePrivilege>().Add(rolePrivilege);
                     }
                 }
                 privilegeProvider.SaveChanges();

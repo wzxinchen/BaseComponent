@@ -1,4 +1,4 @@
-﻿namespace Xinchen.ApplicationBase
+﻿namespace Xinchen.ApplicationBase.Mvc
 {
     using Ext.Net;
     using Newtonsoft.Json.Linq;
@@ -7,14 +7,14 @@
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Transactions;
-    using Xinchen.ApplicationBase.Model;
+    using Xinchen.ApplicationBase.Mvc.Model;
     using Xinchen.DbUtils;
-    using Xinchen.ExtNetBase.TreePanelEx;
     using Xinchen.PrivilegeManagement;
     using Xinchen.PrivilegeManagement.Enums;
     using Xinchen.PrivilegeManagement.DTO;
     using Xinchen.PrivilegeManagement.ViewModel;
-
+    using System.Linq.Expressions;
+    using System.Linq.Dynamic;
     public class Privilege
     {
         private Xinchen.PrivilegeManagement.PrivilegeBase _privilegeBase;
@@ -52,7 +52,7 @@
             }
         }
 
-        public Xinchen.PrivilegeManagement.DTO.User AddUser(AddUserModel addUserModel, int[] rolesId)
+        public Xinchen.PrivilegeManagement.DTO.User AddUser(AddUserModel addUserModel)
         {
             Xinchen.PrivilegeManagement.DTO.User user = this._privilegeBase.GetUser(addUserModel.Username);
             if (user != null)
@@ -62,7 +62,7 @@
             using (TransactionScope scope = new TransactionScope())
             {
                 user = this._privilegeBase.AddUser(addUserModel.Username, addUserModel.Description, addUserModel.Status);
-                foreach (int num in rolesId)
+                foreach (int num in addUserModel.RoleIds)
                 {
                     this._privilegeBase.AddUserRole(num, user.Id);
                 }
@@ -106,26 +106,26 @@
             return this._privilegeBase.GetMenuPrivilege(menuId);
         }
 
-        public List<Xinchen.ExtNetBase.TreePanelEx.Node> GetMenus(int parentId)
-        {
-            IList<Xinchen.PrivilegeManagement.DTO.Menu> menus = this._privilegeBase.GetMenus(parentId);
-            List<Xinchen.ExtNetBase.TreePanelEx.Node> list2 = new List<Xinchen.ExtNetBase.TreePanelEx.Node>();
-            foreach (Xinchen.PrivilegeManagement.DTO.Menu menu in menus)
-            {
-                Xinchen.ExtNetBase.TreePanelEx.Node item = new Xinchen.ExtNetBase.TreePanelEx.Node
-                {
-                    Id = menu.Id,
-                    Name = menu.Name
-                };
-                list2.Add(item);
-            }
-            return list2;
-        }
+        //public List<Xinchen.ExtNetBase.TreePanelEx.Node> GetMenus(int parentId)
+        //{
+        //    IList<Xinchen.PrivilegeManagement.DTO.Menu> menus = this._privilegeBase.GetMenus(parentId);
+        //    List<Xinchen.ExtNetBase.TreePanelEx.Node> list2 = new List<Xinchen.ExtNetBase.TreePanelEx.Node>();
+        //    foreach (Xinchen.PrivilegeManagement.DTO.Menu menu in menus)
+        //    {
+        //        Xinchen.ExtNetBase.TreePanelEx.Node item = new Xinchen.ExtNetBase.TreePanelEx.Node
+        //        {
+        //            Id = menu.Id,
+        //            Name = menu.Name
+        //        };
+        //        list2.Add(item);
+        //    }
+        //    return list2;
+        //}
 
-        public List<Ext.Net.Node> GetNavigationMenus(int parentId)
+        public NodeCollection GetNavigationMenus(int parentId)
         {
             IList<UserMenu> navigationMenus = this._privilegeBase.GetNavigationMenus(parentId);
-            List<Ext.Net.Node> list2 = new List<Ext.Net.Node>();
+            var list2 = new NodeCollection();
             foreach (UserMenu menu in navigationMenus)
             {
                 string url = menu.Url;
@@ -310,22 +310,75 @@
             return list;
         }
 
-        public IList<UserRoleDetailInfo> GetUsers(int page, int pageSize, out int recordCount, FilterLinked filterLinked = null, Sort sort = null)
+        public PageResult<UserRoleDetailInfo> GetUsers(int page, int pageSize, IList<SqlFilter> filters = null, Sort sort = null)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
-            string condition = null, order = null;
-
-            if (filterLinked != null)
+            int[] rolesId = null;
+            if (filters != null)
             {
-                condition = filterLinked.ToString(parameters);
+                foreach (var filter in filters)
+                {
+                    switch (filter.Name)
+                    {
+                        case "Roles":
+                            rolesId = filter.GetValue<List<int>>().ToArray();
+                            break;
+                    }
+                }
             }
-
-            if (sort != null)
+            Func<IQueryable<UserRoleDetailInfo>, IQueryable<UserRoleDetailInfo>> extra = query =>
             {
-                order = sort.ToString();
-            }
+                if (filters != null)
+                {
+                    foreach (var filter in filters)
+                    {
+                        switch (filter.Name)
+                        {
+                            case "Roles":
+                                break;
+                            case "Status":
+                                var status = filter.Value as IList<int>;
+                                query = query.Where(x => status.Contains((int)x.Status));
+                                break;
+                            default:
+                                query = query.Where(filter.ToString(), filter.Value);
+                                break;
+                        }
+                    }
+                }
+                if (sort == null)
+                {
+                    sort = new Sort();
+                    sort.Field = "Id";
+                    sort.SortOrder = SortOrder.DESCENDING;
+                }
+                query = query.OrderBy(sort.Field + " " + sort.SortOrder.ToString());
+                return query;
+            };
 
-            return _privilegeBase.GetUsers(page, pageSize, out recordCount, condition, order, parameters.Values.ToArray());
+            var pr = _privilegeBase.GetUsers(page, pageSize, rolesId, extra);
+            var userRoleDict = _privilegeBase.GetUserRoles().GroupBy(x => x.UserId);
+            var roles = _privilegeBase.GetRoles().ToDictionary(x => x.Id);
+            foreach (var userRole in pr.Data)
+            {
+                var userRoleIds = userRoleDict.FirstOrDefault(x => x.Key == userRole.Id);
+                if (userRoleIds == null)
+                {
+                    continue;
+                }
+                var userRoles = new List<string>();
+                foreach (var item in userRoleIds)
+                {
+                    var roleId = item.RoleId;
+                    Role role = null;
+                    if (roles.TryGetValue(roleId, out role))
+                    {
+                        userRoles.Add(role.Name);
+                    }
+                }
+                var tmp = userRole;
+                tmp.Roles = string.Join(",", userRoles);
+            }
+            return pr;
         }
 
         //public IList<UserRoleInfo> GetUsers(StoreReadDataEventArgs arg2, Func<string, string> fieldMap = null)

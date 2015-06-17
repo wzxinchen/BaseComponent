@@ -12,7 +12,6 @@ namespace Xinchen.DynamicObject
     {
         private const string DynamicAssemblyName = "DynamicAssembly"; //动态程序集名称
         private const string DynamicModuleName = "DynamicAssemblyModule";
-        private const string DynamicModuleDllName = "DynamicAssembly.dll"; //动态模块名称
         private const string ProxyClassNameFormater = "{0}_Proxy";
         private static IDictionary<Type, IDictionary<string, Action<object, object[]>>> _propertyDirectSetCache = new Dictionary<Type, IDictionary<string, Action<object, object[]>>>();
         private static readonly Type ModifiedPropertyNamesType = typeof(Dictionary<string, object>);
@@ -32,7 +31,7 @@ namespace Xinchen.DynamicObject
         {
         }
 
-        private const MethodAttributes GetSetMethodAttributes =
+        public const MethodAttributes GetSetMethodAttributes =
             MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.CheckAccessOnOverride |
             MethodAttributes.Virtual | MethodAttributes.HideBySig;
 

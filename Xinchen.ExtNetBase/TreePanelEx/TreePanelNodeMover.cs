@@ -145,7 +145,8 @@
             Ext.Net.Node item = new Ext.Net.Node
             {
                 NodeID = "0",
-                Text = "根"
+                Text = "根",
+                Expanded = true
             };
             treeStore.Root.Add(item);
             Add(treePanel);
@@ -249,7 +250,7 @@
             };
             buttons.Add(button2);
             button2.DirectClick += new ComponentDirectEvent.DirectEventHandler(this.btnAddSelected_DirectClick);
-            button2.DirectEvents.Click.EventMask.Set("正在添加"); 
+            button2.DirectEvents.Click.EventMask.Set("正在添加");
             this._treePanelRight = new TreePanel();
             this._treePanelRight.ID = "_treePanelRight";
             this._treePanelRight.Title = "已添加";

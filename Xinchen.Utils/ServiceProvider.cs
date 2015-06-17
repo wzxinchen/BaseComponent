@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,6 +20,18 @@ namespace Xinchen.Utils
                 _serviceDict.Add(type, service);
             }
             return (T)service;
+        }
+
+        public static T GetServiceFromCallContext<T>()
+        {
+            var type = typeof(T);
+            object o = CallContext.GetData(type.FullName);
+            if (o == null)
+            {
+                o = Activator.CreateInstance(type, false);
+                CallContext.SetData(type.FullName, o);
+            }
+            return (T)o;
         }
     }
 }

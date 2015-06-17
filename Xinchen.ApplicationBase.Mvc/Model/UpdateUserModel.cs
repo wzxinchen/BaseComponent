@@ -1,22 +1,19 @@
-﻿namespace Xinchen.PrivilegeManagement.DTO
+﻿namespace Xinchen.ApplicationBase.Mvc.Model
 {
     using System;
+    using System.ComponentModel.DataAnnotations;
     using System.Runtime.CompilerServices;
     using Xinchen.PrivilegeManagement.Enums;
 
-    public class UserRoleDetailInfo
+    public class UpdateUserModel
     {
-        public DateTime CreateTime { get; set; }
-
         public string Description { get; set; }
 
+        [Required]
         public BaseStatuses Status { get; set; }
 
+        [Required]
         public int Id { get; set; }
-
-        public string Roles { get; set; }
-
-        public string Username { get; set; }
     }
 }
 

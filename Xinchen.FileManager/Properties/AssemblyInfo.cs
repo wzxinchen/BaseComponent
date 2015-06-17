@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // 有关程序集的常规信息通过以下
 // 特性集控制。更改这些特性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("Xinchen.ApplicationBase.Mvc")]
+[assembly: AssemblyTitle("Xinchen.TxFileManager")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Xinchen.ApplicationBase.Mvc")]
+[assembly: AssemblyProduct("Xinchen.TxFileManager")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
-[assembly: Guid("7a308eb7-8bb8-4ab8-af98-9b9be78d7244")]
+[assembly: Guid("d8a07f13-e517-4bff-bcf6-df2d994ada6f")]
 
 // 程序集的版本信息由下面四个值组成: 
 //

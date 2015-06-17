@@ -203,10 +203,6 @@
       <Project>{6be86e93-58b7-463a-a4d9-7f7da8a0089a}</Project>
       <Name>Xinchen.Utils</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Xinchen.XLinq\Xinchen.XLinq.csproj">
-      <Project>{d3b89b15-0a03-4c61-b722-8ac59f0d13eb}</Project>
-      <Name>Xinchen.XLinq</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

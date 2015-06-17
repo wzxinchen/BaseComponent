@@ -397,13 +397,13 @@
                 return new Sort()
                 {
                     Field = fieldMap == null ? item.Property : fieldMap(item.Property),
-                    SortOrder = item.Direction == SortDirection.ASC ? SortOrder.ASC : SortOrder.DESC
+                    SortOrder = item.Direction == SortDirection.ASC ? SortOrder.ASC : SortOrder.DESCENDING
                 };
             }
             return new Sort()
             {
                 Field = fieldMap == null ? "Id" : fieldMap("Id"),
-                SortOrder = SortOrder.DESC
+                SortOrder = SortOrder.DESCENDING
             };
         }
     }

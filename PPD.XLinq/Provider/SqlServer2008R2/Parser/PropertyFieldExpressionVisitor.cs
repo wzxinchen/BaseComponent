@@ -6,8 +6,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-
-namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
+using Xinchen.Utils;
+namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 {
     /// <summary>
     /// 对访问成员属性的表达式进行分析
@@ -15,18 +15,17 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
     public class PropertyFieldExpressionVisitor : ExpressionVisitorBase
     {
         Dictionary<string, Join> _joins;
-        /// <summary>
-        /// 参数可传null，该参数主要用于创建该表达式中可能出现的对Entity的访问
-        /// </summary>
-        /// <param name="joins"></param>
-        public PropertyFieldExpressionVisitor(Dictionary<string, Join> joins)
+
+        public PropertyFieldExpressionVisitor(TranslateContext context)
+            : base(context)
         {
-            this._joins = joins;
+            // TODO: Complete member initialization
+            this._joins = context.Joins;
+            this._columns = context.Columns;
         }
 
         public override Expression Visit(Expression node)
         {
-            Type = MemberExpressionType.None;
             var sepcNode = node;
             if (sepcNode.NodeType == ExpressionType.Quote)
             {
@@ -41,23 +40,27 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            MethodCallExpressionVisitor visitor = new MethodCallExpressionVisitor(_joins);
+            MethodCallExpressionVisitor visitor = new MethodCallExpressionVisitor(Context);
             visitor.Visit(node);
-            Type = visitor.Type;
-            if (Type == MemberExpressionType.Column)
+            var type = visitor.Token.Type;
+            if (type == TokenType.Column)
             {
-                var token = (Token)visitor.Result;
-                var column = token.Column;
+                Token = visitor.Token;
+                var column = Token.Column;
                 column.Converter = GetConverter(column.Converter);
-                Result = Token.Create(column);
+            }
+            else if (type == TokenType.Condition)
+            {
+                throw new Exception();
             }
             else
             {
-                Result = visitor.Result;
+                var obj = visitor.Token.Object;
                 while (_memberInfos.Count > 0)
                 {
-                    Result = GetValue((MemberExpression)_memberInfos.Pop(), Result);
+                    obj = GetValue((MemberExpression)_memberInfos.Pop(), obj);
                 }
+                Token = Token.Create(obj);
             }
             return node;
         }
@@ -79,6 +82,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
 
         Stack<Expression> _memberInfos = new Stack<Expression>();
         private MemberInfo _tableMember;
+        private Dictionary<string, Column> _columns;
         protected override Expression VisitMember(MemberExpression node)
         {
             if (node.Expression == null)
@@ -89,36 +93,47 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
                 {
                     value = GetValue((MemberExpression)_memberInfos.Pop(), value);
                 }
-                Result = value;
-                Type = MemberExpressionType.Object;
+                Token = Token.Create(value);
                 return node;
             }
             if (node.Member.DeclaringType == typeof(TimeSpan))
             {
+                var unit = string.Empty;
+                switch (node.Member.Name)
+                {
+                    case "TotalDays":
+                        unit = "DAY";
+                        break;
+                    case "TotalHours":
+                        unit = "HOUR";
+                        break;
+                    case "TotalMilliseconds":
+                        unit = "MILLISECOND";
+                        break;
+                    case "TotalMinutes":
+                        unit = "MINUTE";
+                        break;
+                    case "TotalSeconds":
+                        unit = "SECOND";
+                        break;
+                    default:
+                        throw new Exception();
+                }
                 if (node.Expression.NodeType == ExpressionType.Subtract)
                 {
                     var binaryExp = (BinaryExpression)node.Expression;
                     var left = binaryExp.Left;
                     var right = binaryExp.Right;
-                    var leftVisitor = new MemberExpressionVisitor(_joins);
+                    var leftVisitor = new MemberExpressionVisitor(Context);
                     leftVisitor.Visit(left);
-                    var rightVisitor = new MemberExpressionVisitor(_joins);
+                    var rightVisitor = new MemberExpressionVisitor(Context);
                     rightVisitor.Visit(right);
-                    if (leftVisitor.Type == MemberExpressionType.Column && rightVisitor.Type == MemberExpressionType.Object)
+                    if (leftVisitor.Token.Type == TokenType.Column && rightVisitor.Token.Type == TokenType.Object)
                     {
-                        Token token = null;
-                        var leftToken = (Token)leftVisitor.Result;
-                        if (leftToken.Type == TokenType.Column)
-                        {
-                            var rightObject = (DateTime)rightVisitor.Result;
-                            Result = leftToken.Column.Converter = "DATEDIFF(DAY,@param1,{0})";
-                            leftToken.Column.ConverterParameters.Add(rightObject);
-                            Type = MemberExpressionType.Column;
-                        }
-                        else
-                        {
-                            throw new Exception();
-                        }
+                        var rightObject = (DateTime)rightVisitor.Token.Object;
+                        leftVisitor.Token.Column.Converter = "DATEDIFF(" + unit + ",@param1,{0})";
+                        leftVisitor.Token.Column.ConverterParameters.Add(rightObject);
+                        Token = leftVisitor.Token;
                     }
                     else
                     {
@@ -142,8 +157,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
             {
                 value = GetValue((MemberExpression)_memberInfos.Pop(), value);
             }
-            Result = value;
-            Type = MemberExpressionType.Object;
+            Token = Token.Create(value);
             return base.VisitConstant(node);
         }
 
@@ -225,14 +239,14 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
         protected override Expression VisitParameter(ParameterExpression node)
         {
             var column = new Column();
-            Type = MemberExpressionType.Column;
             if (TableInfoManager.IsEntity(node.Type))
             {
                 //弹出第一个参数，一般是列
+                var table = GetTable(node.Type);
                 var _memberInfo = ((MemberExpression)_memberInfos.Pop()).Member;
                 column.DataType = ((PropertyInfo)_memberInfo).PropertyType;
-                column.Name = _memberInfo.Name;
-                var table = GetTable(node.Type);
+                column.Name = table.Columns.Get(_memberInfo.Name).Name;
+                column.MemberInfo = _memberInfo;
                 var tableAlias = node.Name;
                 if (_joins != null)
                 {
@@ -250,31 +264,46 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
             }
             else
             {
-                var tableInfo = GetTable();
-                var columnMember = ((MemberExpression)_memberInfos.Pop()).Member;
-                var columnType = ((PropertyInfo)columnMember).PropertyType;
-                var tableAlias = _tableMember.Name;
-                if (_joins != null)
+                SchemaModel.Table tableInfo = null;
+                MemberInfo columnMember = null;
+                var tableAlias = string.Empty;
+                Table table = null;
+                if (_memberInfos.Count > 1)
                 {
-                    if (_joins.ContainsKey(tableAlias))
+                    tableInfo = GetTable();
+                    tableAlias = _tableMember.Name;
+                    columnMember = ((MemberExpression)_memberInfos.Pop()).Member;
+                    if (_joins != null)
                     {
-                        tableAlias = _joins[tableAlias].Right.Table.Alias;
+                        if (_joins.ContainsKey(tableAlias))
+                        {
+                            tableAlias = _joins[tableAlias].Right.Table.Alias;
+                        }
                     }
+                    else
+                    {
+                        tableAlias = tableInfo.Name;
+                    }
+                    table = CreateTable(tableAlias, tableInfo.DataBase, tableInfo.Name, tableInfo.Type);
                 }
                 else
                 {
-                    tableAlias = tableInfo.Name;
+                    columnMember = ((MemberExpression)_memberInfos.Pop()).Member;
+                    table = _columns.Get(columnMember.Name).Table;
+                    tableAlias = table.Alias;
+                    tableInfo = GetTable(table.Type);
                 }
-                var table = CreateTable(tableAlias, tableInfo.DataBase, tableInfo.Name, tableInfo.Type);
+                var columnType = ((PropertyInfo)columnMember).PropertyType;
                 column = new Column()
                 {
                     DataType = columnType,
-                    Name = columnMember.Name,
-                    Table = table
+                    Name = tableInfo.Columns.Get(columnMember.Name).Name,
+                    Table = table,
+                    MemberInfo = columnMember
                 };
                 column.Converter = GetConverter(null);
             }
-            Result = Token.Create(column);
+            Token = Token.Create(column);
             return node;
         }
     }

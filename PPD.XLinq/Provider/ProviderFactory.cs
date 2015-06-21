@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xinchen.Utils;
 
 namespace PPD.XLinq.Provider
 {
@@ -11,12 +12,12 @@ namespace PPD.XLinq.Provider
 
         internal static ProviderBase CreateProvider(string name)
         {
-            switch(name)
+            switch (name)
             {
                 case "SqlServer2008R2":
-                    return new SqlServer2008R2Provider();
+                    return ObjectCache<SqlServer2008R2Provider>.GetObject();
             }
-            return null;
+            throw new NotSupportedException(name);
         }
     }
 }

@@ -13,8 +13,8 @@ namespace PPD.XLinq.UnitTests.Model
     //[Table("User")]
     public class User
     {
-        [Column("UserId")]
-        public int UserId { get; set; }
+        [Column("UserId"),Key,DatabaseGenerated(DatabaseGeneratedOption.None)]
+        public int Id { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
         //public DateTime? VerifyTime { get; set; }

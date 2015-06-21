@@ -12,6 +12,7 @@ namespace PPD.XLinq.UnitTests.Model
     //[Table("TransferOrders")]
     public class TransferOrder
     {
+        public int Id { get; set; }
         public int ToUserId { get; set; }
         public string ToUsername { get; set; }
     }

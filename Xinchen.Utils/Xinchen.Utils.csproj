@@ -56,9 +56,11 @@
     <Compile Include="DataAnnotations\ForeignKeyAttribute.cs" />
     <Compile Include="DataAnnotations\PrivilegeDescription.cs" />
     <Compile Include="DataAnnotations\TableAttribute.cs" />
+    <Compile Include="DictionaryExtension.cs" />
     <Compile Include="EmailHelper.cs" />
     <Compile Include="Entity\EntityResult.cs" />
     <Compile Include="EnumHelper.cs" />
+    <Compile Include="ObjectCache.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceProvider.cs" />
     <Compile Include="StringHelper.cs" />

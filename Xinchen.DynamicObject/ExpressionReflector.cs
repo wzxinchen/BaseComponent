@@ -152,8 +152,8 @@ namespace Xinchen.DynamicObject
     {
         private static IDictionary<Type, Dictionary<string, Func<object, object>>> _objectGetters = new Dictionary<Type, Dictionary<string, Func<object, object>>>();
         private static IDictionary<Type, Dictionary<string, Action<object, object>>> _objectSetters = new Dictionary<Type, Dictionary<string, Action<object, object>>>();
-        private static IDictionary<Type, Dictionary<string, Action<object, object[]>>> _objectMethods = new
-        Dictionary<Type, Dictionary<string, Action<object, object[]>>>();
+        //private static IDictionary<Type, Dictionary<string, Action<object, object[]>>> _objectMethods = new Dictionary<Type, Dictionary<string, Action<object, object[]>>>();
+        private static Dictionary<Type, Func<object[], object>> _objectConstructors = new Dictionary<Type, Func<object[], object>>();
 
         public static Dictionary<string, Func<object, object>> GetGetters(Type entityType)
         {
@@ -179,48 +179,6 @@ namespace Xinchen.DynamicObject
             return dictionary;
         }
 
-        //public static PropertyInfo[] GetProperties(Type type)
-        //{
-        //    return type.GetProperties(BindingFlags.SetProperty | BindingFlags.GetProperty | BindingFlags.CreateInstance | BindingFlags.Public | BindingFlags.Instance);
-        //}
-        //public static void Invoke(object entity, string methodName, params object[] args)
-        //{
-        //    Type key = entity.GetType();
-        //    Action<object, object[]> action = null;
-        //    if (_objectMethods.ContainsKey(key))
-        //    {
-        //        Dictionary<string, Action<object, object[]>> dictionary = _objectMethods[key];
-        //        if (dictionary.ContainsKey(methodName))
-        //        {
-        //            action = dictionary[methodName];
-        //        }
-        //    }
-        //    else
-        //    {
-        //        Dictionary<string, Action<object, object[]>> dictionary2 = new Dictionary<string, Action<object, object[]>>();
-        //        _objectMethods.Add(key, dictionary2);
-        //    }
-        //    if (action == null)
-        //    {
-        //        ParameterExpression expression = Expression.Parameter(_objectType);
-        //        UnaryExpression expression2 = Expression.Convert(expression, key);
-        //        ParameterExpression array = Expression.Parameter(typeof(object[]));
-        //        List<Expression> list = new List<Expression>();
-        //        MethodInfo method = key.GetMethod(methodName);
-        //        ParameterInfo[] parameters = method.GetParameters();
-        //        for (int i = 0; i < parameters.Length; i++)
-        //        {
-        //            ParameterInfo info2 = parameters[i];
-        //            UnaryExpression item = Expression.Convert(Expression.ArrayIndex(array, Expression.Constant(i)), parameters[i].ParameterType);
-        //            list.Add(item);
-        //        }
-        //        Expression instance = method.IsStatic ? null : Expression.Convert(expression, method.ReflectedType);
-        //        action = Expression.Lambda<Action<object, object[]>>(Expression.Call(instance, method, list.ToArray()), new ParameterExpression[] { expression, array }).Compile();
-        //        _objectMethods[key].Add(methodName, action);
-        //    }
-        //    action(entity, args);
-        //}
-
         public static Dictionary<string, object> GetPropertyValues(object entity)
         {
             Dictionary<string, object> dictionary = new Dictionary<string, object>();
@@ -230,6 +188,34 @@ namespace Xinchen.DynamicObject
                 dictionary.Add(pair.Key, pair.Value(entity));
             }
             return dictionary;
+        }
+
+        public static object CreateInstance(Type type, params object[] parameters)
+        {
+            Func<object[], object> ctorDelegate = null;
+            if (!_objectConstructors.TryGetValue(type, out ctorDelegate))
+            {
+                lock (_objectConstructors)
+                {
+                    if (!_objectConstructors.TryGetValue(type, out ctorDelegate))
+                    {
+                        var ctorInfo = type.GetConstructors()[0];
+                        var parameterExp = Expression.Parameter(typeof(object[]));
+                        List<Expression> expList = new List<Expression>();
+                        var parameterList = ctorInfo.GetParameters();
+                        for (int i = 0; i < parameterList.Length; i++)
+                        {
+                            var paramObj = Expression.ArrayIndex(parameterExp, Expression.Constant(i));
+                            var expObj = Expression.Convert(paramObj, parameterList[i].ParameterType);
+                            expList.Add(expObj);
+                        }
+                        var newExp = Expression.New(ctorInfo, expList.ToArray());
+                        ctorDelegate = Expression.Lambda<Func<object[], object>>(newExp, parameterExp).Compile();
+                        _objectConstructors.Add(type, ctorDelegate);
+                    }
+                }
+            }
+            return ctorDelegate(parameters);
         }
 
         public static Dictionary<string, Action<object, object>> GetSetters(Type entityType)
@@ -285,7 +271,7 @@ namespace Xinchen.DynamicObject
             setter(entity, value);
         }
 
-        public static IDictionary<string,PropertyInfo> GetProperties(Type type)
+        public static IDictionary<string, PropertyInfo> GetProperties(Type type)
         {
             return ExpressionReflectorCore.GetProperties(type);
         }
@@ -296,7 +282,7 @@ namespace Xinchen.DynamicObject
         /// <param name="proxyObject"></param>
         /// <param name="methodName"></param>
         /// <param name="argTypes"></param>
-        public static Action<object,object[]> GetMethodDelegate(object proxyObject, string methodName, params Type[] argTypes)
+        public static Action<object, object[]> GetMethodDelegate(object proxyObject, string methodName, params Type[] argTypes)
         {
             var proxyType = proxyObject.GetType();
             var method = proxyType.GetMethod(methodName, argTypes);
@@ -322,7 +308,7 @@ namespace Xinchen.DynamicObject
         public static Type GetNullableOrSelfType(Type type)
         {
             Type result = Nullable.GetUnderlyingType(type);
-            if(result==null)
+            if (result == null)
             {
                 return type;
             }

@@ -10,7 +10,7 @@ namespace PPD.XLinq
 {
     public class SqlExecutor
     {
-        DbProviderFactory _factory;
+        static DbProviderFactory _factory;
         static Dictionary<Type, DbType> _typeMapper = new Dictionary<Type, DbType>();
         static SqlExecutor()
         {
@@ -29,9 +29,7 @@ namespace PPD.XLinq
             _typeMapper.Add(typeof(double?), DbType.Double);
             _typeMapper.Add(typeof(float), DbType.Single);
             _typeMapper.Add(typeof(float?), DbType.Single);
-        }
-        public SqlExecutor()
-        {
+            _typeMapper.Add(typeof(bool), DbType.Boolean);
             _factory = DbProviderFactories.GetFactory(DataContext.DbFactoryName);
         }
 
@@ -43,7 +41,7 @@ namespace PPD.XLinq
             return dbConnection;
         }
 
-        DbCommand CreateCommand(DbConnection conn,string cmdText, Dictionary<string, object> parameters)
+        DbCommand CreateCommand(DbConnection conn, string cmdText, Dictionary<string, object> parameters)
         {
             var dbCommand = _factory.CreateCommand();
             dbCommand.Connection = conn;
@@ -66,12 +64,22 @@ namespace PPD.XLinq
             return dbDataAdapter;
         }
 
+        public object ExecuteScalar(string sql, Dictionary<string, object> parameters)
+        {
+            var conn = CreateConnection();
+            using (conn)
+            {
+                var cmd = CreateCommand(conn, sql, parameters);
+                return cmd.ExecuteScalar();
+            }
+        }
+
         public DataSet ExecuteDataSet(string sql, Dictionary<string, object> parameters)
         {
             var conn = CreateConnection();
             using (conn)
             {
-                var cmd = CreateCommand(conn,sql,parameters);
+                var cmd = CreateCommand(conn, sql, parameters);
                 using (cmd)
                 {
                     var dda = CreateDataAdapter(cmd);
@@ -82,6 +90,15 @@ namespace PPD.XLinq
                         return ds;
                     }
                 }
+            }
+        }
+        public int ExecuteNonQuery(string sql, Dictionary<string, object> parameters)
+        {
+            var conn = CreateConnection();
+            using (conn)
+            {
+                var cmd = CreateCommand(conn, sql, parameters);
+                return cmd.ExecuteNonQuery();
             }
         }
 

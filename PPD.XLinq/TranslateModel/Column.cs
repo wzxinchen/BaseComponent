@@ -11,6 +11,7 @@ namespace PPD.XLinq.TranslateModel
     {
         public Table Table { get; set; }
         public string Name { get; set; }
+        public MemberInfo MemberInfo { get; set; }
 
         /// <summary>
         /// 调用者在linq中指定的别名，若未指定别名则为空

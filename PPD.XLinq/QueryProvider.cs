@@ -1,10 +1,12 @@
 ﻿using PPD.XLinq.Provider;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using Xinchen.ObjectMapper;
 
 namespace PPD.XLinq
 {
@@ -33,17 +35,77 @@ namespace PPD.XLinq
             var parser = provider.CreateParser();
             parser.ElementType = _elementType;
             parser.Parse(expression);
-            provider.CreateSqlExecutor().ExecuteDataSet(parser.Result.CommandText, parser.Result.Parameters);
+            var executor = provider.CreateSqlExecutor();
+            var ds = executor.ExecuteDataSet(parser.Result.CommandText, parser.Result.Parameters);
             Type type = typeof(TResult);
+            //var method = ((MethodCallExpression)expression).Method;
+            //if (ds.Tables.Count <= 0 || ds.Tables[0].Rows.Count <= 0)
+            //{
+            //    var typeArg = type.GetGenericArguments()[0];
+            //    if (method.Name == "ToList")
+            //    {
+            //        return (TResult)Activator.CreateInstance(typeof(List<>).MakeGenericType(typeArg));
+            //    }
+            //    if (method.Name == "FirstOrDefault")
+            //    {
+            //        return default(TResult);
+            //    }
+            //    else if (method.Name == "First")
+            //    {
+            //        throw new ArgumentOutOfRangeException();
+            //    }
+            //}
+            bool isValueType = false;
             if (type.IsGenericType)
             {
-                var elementType = type.GetGenericArguments()[0];
-                return (TResult)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType));
+                if (typeof(IEnumerable).IsAssignableFrom(type))
+                {
+                    return (TResult)EntityMapper.Map(type.GetGenericArguments()[0], ds);
+                }
+                if (typeof(Nullable<>).IsAssignableFrom(type))
+                {
+                    isValueType = true;
+                }
+                if (!isValueType)
+                {
+                    throw new Exception();
+                }
             }
-            else
+            if (type.IsValueType || isValueType)
             {
-                return default(TResult);
+                if(ds.Tables[0].Rows.Count<=0)
+                {
+                    return default(TResult);
+                }
+                var result = ds.Tables[0].Rows[0][0];
+                if (result == DBNull.Value)
+                {
+                    return default(TResult);
+                }
+                return (TResult)Convert.ChangeType(result, type);
             }
+            throw new Exception();
+            //if (type.IsGenericType)
+            //{
+            //    var typeDef = type.GetGenericTypeDefinition();
+            //    if (typeDef == typeof(Nullable<>) && type.GetGenericArguments()[0].IsValueType)
+            //    {
+            //        if (result == DBNull.Value)
+            //        {
+            //            return default(TResult);
+            //        }
+            //        return (TResult)Convert.ChangeType(result, type);
+            //    }
+            //    else if (typeDef == typeof(IEnumerable))
+            //    {
+            //        return (TResult)EntityMapper.Map(typeArg, ds);
+            //    }
+            //    else
+            //    {
+            //        throw new Exception();
+            //    }
+            //}
+            throw new Exception();
         }
 
         public object Execute(System.Linq.Expressions.Expression expression)

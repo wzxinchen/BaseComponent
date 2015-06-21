@@ -53,6 +53,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xinchen.ExtNetBase.Mvc", "X
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmitReflectorTest", "EmitReflectorTest\EmitReflectorTest.csproj", "{B3147D03-2368-4014-939B-BBDC1479457F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PPD.XLinq", "PPD.XLinq\PPD.XLinq.csproj", "{282712CC-624E-4A88-9E17-4F3F9000368A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PPD.XLinq.UnitTests", "PPD.XLinq.UnitTests\PPD.XLinq.UnitTests.csproj", "{21055D89-0B72-45EF-BC8A-752ED467A7AC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -139,6 +143,14 @@ Global
 		{B3147D03-2368-4014-939B-BBDC1479457F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3147D03-2368-4014-939B-BBDC1479457F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3147D03-2368-4014-939B-BBDC1479457F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{282712CC-624E-4A88-9E17-4F3F9000368A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{282712CC-624E-4A88-9E17-4F3F9000368A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{282712CC-624E-4A88-9E17-4F3F9000368A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{282712CC-624E-4A88-9E17-4F3F9000368A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21055D89-0B72-45EF-BC8A-752ED467A7AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21055D89-0B72-45EF-BC8A-752ED467A7AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21055D89-0B72-45EF-BC8A-752ED467A7AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21055D89-0B72-45EF-BC8A-752ED467A7AC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -16,5 +16,13 @@ namespace Xinchen.DynamicObject.EmitReflection
             }
             return new Type(obj.GetType());
         }
+        public static Type GetEmitType(this System.Type obj)
+        {
+            if (obj == null)
+            {
+                return null;
+            }
+            return new Type(obj);
+        }
     }
 }

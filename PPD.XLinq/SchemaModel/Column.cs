@@ -12,5 +12,8 @@ namespace PPD.XLinq.SchemaModel
         public string Name { get; set; }
         public PropertyInfo PropertyInfo { get; set; }
         public Table Table { get; set; }
+
+        public bool IsKey { get; set; }
+        public bool IsAutoIncreament { get; set; }
     }
 }

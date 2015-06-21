@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using Xinchen.Utils;
 
 namespace Xinchen.DynamicObject.EmitReflection
 {
@@ -19,78 +20,97 @@ namespace Xinchen.DynamicObject.EmitReflection
             this.item = item;
         }
 
+        public IPropertyAccessor GetPropertyAccessor()
+        {
+            IPropertyAccessor accessor = null;
+            if (!_propertyAccessor.TryGetValue(item.DeclaringType, out accessor))
+            {
+                AssemblyBuilder assBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("EmitReflection"), AssemblyBuilderAccess.Run);
+                var moduleBuilder = assBuilder.DefineDynamicModule("EmitReflection"/*, "EmitReflection.dll"*/);
+                var typeBuilder = moduleBuilder.DefineType(item.PropertyType.FullName + "<>PropertyAccessor", TypeAttributes.Public);
+                typeBuilder.AddInterfaceImplementation(typeof(IPropertyAccessor));
+                var stringType = typeof(string);
+                var equalMethod = stringType.GetMethod("Equals", new System.Type[] { stringType });
+                var methodBuilder = typeBuilder.DefineMethod("GetValue", MethodAttributes.Public | MethodAttributes.Virtual, typeof(object), new System.Type[] { typeof(object), typeof(string) });
+                var dictTypeBuilder = moduleBuilder.DefineType(item.PropertyType.FullName + "<>Type");
+                var dictFieldBuilder = dictTypeBuilder.DefineField("SwitchInfo", typeof(Dictionary<string, int>), FieldAttributes.Public | FieldAttributes.Static);
+                dictTypeBuilder.CreateType();
+
+                var ilBuilder = methodBuilder.GetILGenerator();
+                ilBuilder.Emit(OpCodes.Nop);
+                ilBuilder.DeclareLocal(typeof(Dictionary<string, int>));
+                ilBuilder.DeclareLocal(typeof(int));//add索引
+                ilBuilder.DeclareLocal(typeof(int));//get索引
+                ilBuilder.DeclareLocal(item.DeclaringType);//对象索引
+                ilBuilder.Emit(OpCodes.Ldarg_1);
+                ilBuilder.Emit(OpCodes.Castclass, item.DeclaringType);
+                ilBuilder.Emit(OpCodes.Stloc_3);
+                ilBuilder.Emit(OpCodes.Ldsfld, dictFieldBuilder);
+                var switchLabel = ilBuilder.DefineLabel();
+                var endLabel = ilBuilder.DefineLabel();
+                ilBuilder.Emit(OpCodes.Brtrue, switchLabel);
+                var addMethod = typeof(Dictionary<string, int>).GetMethod("Add", new System.Type[] { typeof(string), typeof(int) });
+                var tryGetValueMethod = typeof(Dictionary<string, int>).GetMethod("TryGetValue", new System.Type[] { typeof(string), typeof(int).MakeByRefType() });
+                ilBuilder.Emit(OpCodes.Nop);
+                ilBuilder.Emit(OpCodes.Newobj, typeof(Dictionary<string, int>).GetConstructor(System.Type.EmptyTypes));
+                ilBuilder.Emit(OpCodes.Stloc_0);//字典
+                ilBuilder.Emit(OpCodes.Ldc_I4_0);
+                ilBuilder.Emit(OpCodes.Stloc_1);
+                var labels = new Dictionary<Label, System.Reflection.PropertyInfo>();
+                foreach (var property in item.PropertyType.GetProperties())
+                {
+                    ilBuilder.Emit(OpCodes.Ldloc_0);
+                    ilBuilder.Emit(OpCodes.Ldstr, property.Name);
+                    ilBuilder.Emit(OpCodes.Ldloc_1);
+                    ilBuilder.EmitCall(OpCodes.Callvirt, addMethod, null);
+                    ilBuilder.Emit(OpCodes.Nop);
+                    ilBuilder.Emit(OpCodes.Ldloc_1);
+                    ilBuilder.Emit(OpCodes.Ldc_I4_1);
+                    ilBuilder.Emit(OpCodes.Add);
+                    ilBuilder.Emit(OpCodes.Stloc_1);
+                    labels.Add(ilBuilder.DefineLabel(), property);
+                }
+                ilBuilder.Emit(OpCodes.Ldloc_0);
+                ilBuilder.Emit(OpCodes.Stsfld, dictFieldBuilder);
+                ilBuilder.Emit(OpCodes.Nop);
+                ilBuilder.MarkLabel(switchLabel);
+                ilBuilder.Emit(OpCodes.Ldsfld, dictFieldBuilder);
+                ilBuilder.Emit(OpCodes.Ldarg_2);
+                ilBuilder.Emit(OpCodes.Ldloca, 2);
+                ilBuilder.EmitCall(OpCodes.Callvirt, tryGetValueMethod, null);
+                ilBuilder.Emit(OpCodes.Brfalse, endLabel);
+                ilBuilder.Emit(OpCodes.Ldloc_2);
+                ilBuilder.Emit(OpCodes.Switch, labels.Keys.ToArray());
+                foreach (var label in labels)
+                {
+                    ilBuilder.MarkLabel(label.Key);
+                    ilBuilder.Emit(OpCodes.Ldloc_3);
+                    ilBuilder.EmitCall(OpCodes.Callvirt, label.Value.GetGetMethod(), System.Type.EmptyTypes);
+                    if (label.Value.PropertyType.IsValueType)
+                    {
+                        ilBuilder.Emit(OpCodes.Box, label.Value.PropertyType);
+                    }
+                    ilBuilder.Emit(OpCodes.Ret);
+                }
+                ilBuilder.MarkLabel(endLabel);
+                ilBuilder.Emit(OpCodes.Nop);
+                ilBuilder.Emit(OpCodes.Ldnull);
+                ilBuilder.Emit(OpCodes.Ret);
+                typeBuilder.DefineMethodOverride(methodBuilder, typeof(IPropertyAccessor).GetMethod("GetValue"));
+                var type = typeBuilder.CreateType();
+                accessor = (IPropertyAccessor)Activator.CreateInstance(type);
+                _propertyAccessor.Add(item.DeclaringType, accessor);
+                // assBuilder.Save("EmitReflection.dll");
+            }
+            return accessor;
+        }
+
+        static Dictionary<System.Type, IPropertyAccessor> _propertyAccessor = new Dictionary<System.Type, IPropertyAccessor>();
 
         public object GetValue(object obj)
         {
-            AssemblyName DemoName = new AssemblyName("EmitAssembly");
-            AssemblyBuilderAccess assemblyBuilderAccess = AssemblyBuilderAccess.RunAndSave;
-            AssemblyBuilder dynamicAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(DemoName,
-                assemblyBuilderAccess);
-            var moduleBuilder = dynamicAssembly.DefineDynamicModule("EmitModule", "test.dll");
-            var typeBuilder = moduleBuilder.DefineType("EmitType");
-            //typeBuilder.AddInterfaceImplementation(typeof(IPropertyAccessor));
-            var getValueMethodBuilder = typeBuilder.DefineMethod("GetValue", MethodAttributes.Public, typeof(object), new System.Type[] { typeof(object), typeof(string) });
-            var getValueIlGen = getValueMethodBuilder.GetILGenerator();
-            //var defaultCase = getValueIlGen.DefineLabel();
-
-            getValueIlGen.DeclareLocal(item.DeclaringType);
-            getValueIlGen.DeclareLocal(typeof(object));
-            getValueIlGen.DeclareLocal(typeof(string));
-            getValueIlGen.Emit(OpCodes.Nop);
-            getValueIlGen.Emit(OpCodes.Ldarg_1);
-            getValueIlGen.Emit(OpCodes.Castclass, item.DeclaringType);
-            getValueIlGen.Emit(OpCodes.Stloc_0);
-            getValueIlGen.Emit(OpCodes.Ldarg_2);
-            getValueIlGen.Emit(OpCodes.Stloc_2);
-            getValueIlGen.Emit(OpCodes.Ldloc_2);
-            getValueIlGen.Emit(OpCodes.Ldstr, item.Name);
-            getValueIlGen.EmitCall(OpCodes.Callvirt, typeof(string).GetMethod("Equals", new System.Type[] { typeof(string) }), new System.Type[] { typeof(string) });
-            var testCase = getValueIlGen.DefineLabel();
-            getValueIlGen.Emit(OpCodes.Brtrue_S, testCase);
-            getValueIlGen.MarkLabel(testCase);
-            getValueIlGen.Emit(OpCodes.Ldloc_0);
-            getValueIlGen.EmitCall(OpCodes.Callvirt, item.GetGetMethod(),System.Type.EmptyTypes);
-            getValueIlGen.Emit(OpCodes.Ret);
-            getValueIlGen.Emit(OpCodes.Ldloc_2);
-            getValueIlGen.Emit(OpCodes.Ldstr, "Name");
-            getValueIlGen.EmitCall(OpCodes.Callvirt, typeof(string).GetMethod("Equals", new System.Type[] { typeof(string) }), new System.Type[] { typeof(string) });
-            var testCase1 = getValueIlGen.DefineLabel();
-            getValueIlGen.Emit(OpCodes.Brtrue_S, testCase1);
-            getValueIlGen.MarkLabel(testCase1); 
-            getValueIlGen.Emit(OpCodes.Ldloc_0);
-            getValueIlGen.EmitCall(OpCodes.Callvirt, item.DeclaringType.GetProperty("Name").GetGetMethod(), System.Type.EmptyTypes);
-            getValueIlGen.Emit(OpCodes.Ret);
-            //getValueIlGen.Emit(OpCodes.Ldarg_0);
-            //getValueIlGen.EmitCall(OpCodes.Callvirt, item.GetGetMethod(), new System.Type[] { typeof(object) });
-            //getValueIlGen.Emit(OpCodes.Ret);
-            //var propertyBuilder = typeBuilder.DefineProperty("Test", PropertyAttributes.SpecialName, value.GetType(), null);
-            //var targetObjectType = obj.GetType();
-            //var targetObjectProperties = targetObjectType.GetProperties();
-            //Label defaultCase = getValueIlGen.DefineLabel();
-            ////Label endOfMethod = getValueIlGen.DefineLabel();
-            //var labelDict = targetObjectProperties.Select(x => new { PropertyInfo = x, Label = getValueIlGen.DefineLabel() }).ToDictionary(x => x.PropertyInfo);
-            //var labels = labelDict.Select(x => x.Value.Label).ToArray();
-            ////getValueIlGen.Emit(OpCodes.Ldarg_1);
-            //getValueIlGen.Emit(OpCodes.Switch, labels);
-            ////getValueIlGen.Emit(OpCodes.Br_S, defaultCase);
-            //foreach (var targetObjectProperty in targetObjectProperties)
-            //{
-            //    var label = getValueIlGen.DefineLabel();
-            //    getValueIlGen.MarkLabel(labelDict[targetObjectProperty].Label);
-            //    getValueIlGen.Emit(OpCodes.Ldarg_1);
-            //    getValueIlGen.Emit(OpCodes.Ldstr, targetObjectProperty.Name);
-            //    getValueIlGen.EmitCall(OpCodes.Callvirt, typeof(string).GetMethod("Equals", new System.Type[] { typeof(string) }), new System.Type[] { typeof(string) });
-            //    //getValueIlGen.Emit(OpCodes.Brtrue_S, label);
-            //    //getValueIlGen.MarkLabel(label);
-            //    //getValueIlGen.EmitCall(OpCodes.Callvirt, labelDict[targetObjectProperty].PropertyInfo.GetGetMethod(), new System.Type[] { typeof(object), typeof(string) });
-            //    getValueIlGen.Emit(OpCodes.Ret);
-            //    //getValueIlGen.Emit(OpCodes.Br_S, endOfMethod);
-
-            //}
-            //getValueIlGen.MarkLabel(defaultCase);
-            typeBuilder.CreateType();
-            dynamicAssembly.Save("test.dll");
-            return null;
+            var getter = GetPropertyAccessor();
+            return getter.GetValue(obj, this.item.Name);
         }
     }
 }

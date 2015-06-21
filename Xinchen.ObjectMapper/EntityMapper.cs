@@ -1,6 +1,7 @@
 ﻿namespace Xinchen.ObjectMapper
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Data;
     using System.Linq.Expressions;
@@ -162,6 +163,61 @@
             }
             return list;
         }
+
+        public static IList Map(Type objectType, DataSet ds)
+        {
+            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(objectType));
+            Dictionary<string, Action<object, object>> propertySetters = ExpressionReflector.GetSetters(objectType);
+            var properties = ExpressionReflector.GetProperties(objectType);
+            DataTable table = ds.Tables[0];
+            foreach (DataRow row in ds.Tables[0].Rows)
+            {
+                object local = null;
+                if (objectType.IsSealed)
+                {
+                    //var ctors = objectType.GetConstructors();
+                    //if (ctors.Length <= 0)
+                    //{
+                    //    throw new MissingMethodException("构造方法不存在");
+                    //}
+                    //var ctor = ctors[0];
+                    //var parameters = ctor.GetParameters();
+                    var parameterObjects = new List<object>();
+                    foreach (DataColumn column in ds.Tables[0].Columns)
+                    {
+                        var obj = row[column];
+                        if (obj == DBNull.Value)
+                        {
+                            obj = null;
+                        }
+                        parameterObjects.Add(obj);
+                    }
+                    local = ExpressionReflector.CreateInstance(objectType, parameterObjects.ToArray());
+                }
+                else
+                {
+                    local = ExpressionReflector.CreateInstance(objectType);
+                    foreach (string str in propertySetters.Keys)
+                    {
+                        object obj2 = row[str];
+                        if (obj2 != DBNull.Value)
+                        {
+                            Type propertyType = properties[str].PropertyType;
+                            Type underlyingType = Nullable.GetUnderlyingType(propertyType);
+                            if (underlyingType == null)
+                            {
+                                underlyingType = propertyType;
+                            }
+                            obj2 = Convert.ChangeType(obj2, underlyingType);
+                            propertySetters[str](local, obj2);
+                        }
+                    }
+                }
+                list.Add(local);
+            }
+            return list;
+        }
+
 
         public static TTarget Map<TSource, TTarget>(TSource source)
         {

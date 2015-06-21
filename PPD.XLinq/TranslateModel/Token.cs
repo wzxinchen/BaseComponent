@@ -41,10 +41,33 @@ namespace PPD.XLinq.TranslateModel
         public Column Column { get; private set; }
         public object Object { get; private set; }
         public Condition Condition { get; private set; }
+        public bool IsBool()
+        {
+            return Type == TokenType.Object && (Object is bool || Object is bool?);
+        }
+
+        public bool GetBool()
+        {
+            return (bool)Object;
+        }
+
+        public bool IsNull()
+        {
+            return Type == TokenType.Object && Object == null;
+        }
+
+        internal static Token CreateNull()
+        {
+            return new Token()
+            {
+                Object = null,
+                Type = TokenType.Object
+            };
+        }
     }
 
     public enum TokenType
     {
-        Column, Object,Condition
+        Column, Object, Condition
     }
 }

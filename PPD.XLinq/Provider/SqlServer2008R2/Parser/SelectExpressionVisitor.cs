@@ -6,10 +6,10 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-
-namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
+using Xinchen.Utils;
+namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 {
-    public class SelectExpressionVisitor : ExpressionVisitor
+    public class SelectExpressionVisitor : ExpressionVisitorBase
     {
         IReadOnlyCollection<MemberInfo> _aliaMembers;
         IReadOnlyCollection<Expression> _columnParams;
@@ -17,11 +17,11 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
         private Dictionary<string, Join> _Joins;
         public List<Column> Columns { get; private set; }
 
-        public SelectExpressionVisitor(Type ElementType, Dictionary<string, Join> Joins)
+        public SelectExpressionVisitor(TranslateContext context):base(context)
         {
             // TODO: Complete member initialization
-            this._elementType = ElementType;
-            this._Joins = Joins;
+            this._elementType = context.EntityType;
+            this._Joins = context.Joins;
             Columns = new List<Column>();
         }
 
@@ -42,13 +42,16 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
                     Name = tableSechma.Name,
                     Type = tableSechma.Type
                 };
+                var columns = tableSechma.Columns;
                 foreach (var property in properties)
                 {
                     var column = new Column();
-                    column.Name = property.Name;
+                    column.Name = columns.Get(property.Name).Name;
                     column.DataType = property.PropertyType;
+                    column.MemberInfo = property;
                     column.Table = tableInfo;
                     Columns.Add(column);
+                    Context.Columns.Add(property.Name, column);
                 }
                 return node;
             }
@@ -59,29 +62,28 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
         {
             for (int i = 0; i < node.Arguments.Count; i++)
             {
-                var visitor = new MemberExpressionVisitor(_Joins);
+                var visitor = new MemberExpressionVisitor(Context);
                 var arg = node.Arguments[i];
                 var member = node.Members[i];
                 visitor.Visit(arg);
                 visitor.SelectedColumn.Alias = member.Name;
                 Columns.Add(visitor.SelectedColumn);
+                Context.Columns.Add(member.Name, visitor.SelectedColumn);
             }
             return base.VisitNew(node);
         }
 
-        class MemberExpressionVisitor : ExpressionVisitor
+        class MemberExpressionVisitor : ExpressionVisitorBase
         {
             public Column SelectedColumn { get; private set; }
             public object Value { get; set; }
-            public MemberExpressionType MemberExpressionType { get; private set; }
+            //public MemberExpressionType MemberExpressionType { get; private set; }
             Stack<MemberInfo> _memberInfoStack = new Stack<MemberInfo>();
             private MemberInfo _tableMember;
             private Dictionary<string, Join> _Joins;
-
-            public MemberExpressionVisitor(Dictionary<string, Join> _Joins)
+            public MemberExpressionVisitor(TranslateContext context):base(context)
             {
-                // TODO: Complete member initialization
-                this._Joins = _Joins;
+                _Joins = context.Joins;
                 SelectedColumn = new Column();
             }
             public object GetValue(MemberInfo memberInfo, object obj)
@@ -104,7 +106,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
                 else if (node.Expression.NodeType == ExpressionType.Constant)
                 {
                     //实例成员调用
-                    MemberExpressionType = MemberExpressionType.Object;
+                    //MemberExpressionType = MemberExpressionType.Object;
                     return node;
                 }
                 return base.VisitMember(node);
@@ -171,14 +173,15 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
 
             protected override Expression VisitParameter(ParameterExpression node)
             {
-                MemberExpressionType = MemberExpressionType.Column;
+                //MemberExpressionType = MemberExpressionType.Column;
                 if (TableInfoManager.IsEntity(node.Type))
                 {
                     //弹出第一个参数，一般是列
+                    var table = GetTable(node.Type);
                     var _memberInfo = _memberInfoStack.Pop();
                     SelectedColumn.DataType = ((PropertyInfo)_memberInfo).PropertyType;
-                    SelectedColumn.Name = _memberInfo.Name;
-                    var table = GetTable(node.Type);
+                    SelectedColumn.Name = table.Columns.Get(_memberInfo.Name).Name;
+                    SelectedColumn.MemberInfo = _memberInfo;
                     var tableAlias = node.Name;
                     if (_Joins != null)
                     {
@@ -215,8 +218,9 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
                     SelectedColumn = new Column()
                     {
                         DataType = columnType,
-                        Name = columnMember.Name,
-                        Table = table
+                        Name = tableInfo.Columns.Get(columnMember.Name).Name, 
+                        Table = table,
+                        MemberInfo=columnMember
                     };
                     SelectedColumn.Converter = GetConverter();
                 }

@@ -13,11 +13,11 @@ namespace PPD.XLinq.SchemaModel
     {
         public Table()
         {
-            Columns = new List<Column>();
+            Columns = new Dictionary<string, Column>();
         }
         public string DataBase { get; set; }
         public string Name { get; set; }
         public Type Type { get; set; }
-        public List<Column> Columns { get;private set; }
+        public Dictionary<string,Column> Columns { get;private set; }
     }
 }

@@ -68,14 +68,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
             return node;
         }
 
-        class BinaryExpressionVisitor : ExpressionVisitor
+        class BinaryExpressionVisitor : ExpressionVisitorBase
         {
             Dictionary<string, Join> _joins;
             public BinaryExpressionVisitor(Dictionary<string, Join> joins)
             {
                 this._joins = joins;
             }
-            public object Result { get; private set; }
             public override Expression Visit(Expression node)
             {
                 switch (node.NodeType)
@@ -93,6 +92,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
                     case ExpressionType.LessThan:
                     case ExpressionType.NotEqual:
                     case ExpressionType.LessThanOrEqual:
+                    case ExpressionType.Add:
+                    case ExpressionType.AddChecked:
+                    case ExpressionType.Subtract:
+                    case ExpressionType.SubtractChecked:
+                    case ExpressionType.Multiply:
+                    case ExpressionType.MultiplyChecked:
+                    case ExpressionType.Divide:
                         Result = ParseMathBinary((BinaryExpression)node);
                         return node;
                     case ExpressionType.Not:
@@ -143,10 +149,25 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
 
             object ParseMathBinary(BinaryExpression node)
             {
-                ExpressionVisitorBase leftVisitor = new MemberExpressionVisitor(_joins);
+                ExpressionVisitorBase leftVisitor, rightVisitor;
+                if (node.Left is BinaryExpression)
+                {
+                    leftVisitor = new BinaryExpressionVisitor(_joins);
+                }
+                else
+                {
+                    leftVisitor = new MemberExpressionVisitor(_joins);
+                }
                 leftVisitor.Visit(node.Left);
                 var leftResult = leftVisitor.Result;
-                var rightVisitor = new MemberExpressionVisitor(_joins);
+                if (node.Right is BinaryExpression)
+                {
+                    rightVisitor = new BinaryExpressionVisitor(_joins);
+                }
+                else
+                {
+                    rightVisitor = new MemberExpressionVisitor(_joins);
+                }
                 rightVisitor.Visit(node.Right);
                 var rightResult = rightVisitor.Result;
                 if (leftVisitor.Type == MemberExpressionType.Object && rightVisitor.Type == MemberExpressionType.Object)
@@ -276,6 +297,17 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
                         return CompareType.GreaterThan;
                     case ExpressionType.GreaterThanOrEqual:
                         return CompareType.GreaterThanOrEqual;
+                    case ExpressionType.Add:
+                    case ExpressionType.AddChecked:
+                        return CompareType.Add;
+                    case ExpressionType.Subtract:
+                    case ExpressionType.SubtractChecked:
+                        return CompareType.Substarct;
+                    case ExpressionType.MultiplyChecked:
+                    case ExpressionType.Multiply:
+                        return CompareType.Multiply;
+                    case ExpressionType.Divide:
+                        return CompareType.Divide;
                     default:
                         throw new Exception();
                 }

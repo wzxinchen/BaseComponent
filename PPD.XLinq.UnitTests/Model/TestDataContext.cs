@@ -13,8 +13,8 @@ namespace PPD.XLinq.UnitTests.Model
 
         }
 
-        public virtual DbSet<User> Users { get; set; }
-       public virtual DbSet<TransferOrder> TransferOrders { get; set; }
-        public virtual DbSet<TransferWorkFlow> TransferWorkFlows { get; set; }
+       // public virtual DbSet<User> Users { get; set; }
+       //public virtual DbSet<TransferOrder> TransferOrders { get; set; }
+       // public virtual DbSet<TransferWorkFlow> TransferWorkFlows { get; set; }
     }
 }

@@ -15,8 +15,9 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Visitors
         Column,
 
         /// <summary>
-        /// 该成员表达式是对对象进行的访问
+        /// 自定义的对象
         /// </summary>
-        Object
+        Object,
+        Token
     }
 }

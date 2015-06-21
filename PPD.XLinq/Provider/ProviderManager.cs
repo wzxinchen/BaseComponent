@@ -41,5 +41,18 @@ namespace PPD.XLinq.Provider
                 base["dbFactoryName"] = value;
             }
         }
+
+        [ConfigurationProperty("sequenceTable")]
+        public string SequenceTable
+        {
+            get
+            {
+                return (string)base["sequenceTable"];
+            }
+            set
+            {
+                base["sequenceTable"] = value;
+            }
+        }
     }
 }

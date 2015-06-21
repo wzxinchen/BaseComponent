@@ -1,4 +1,5 @@
-﻿using PPD.XLinq.Provider.SqlServer2008R2.Visitors;
+﻿using PPD.XLinq.Provider.SqlServer2008R2;
+using PPD.XLinq.Provider.SqlServer2008R2.Parser;
 using PPD.XLinq.TranslateModel;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,11 @@ namespace PPD.XLinq.Provider
         public override ParserBase CreateParser()
         {
             return new Parser();
+        }
+
+        internal override SqlServer2008R2.EntityAddBase CreateEntityAdder()
+        {
+            return new EntityAdder();
         }
     }
 }

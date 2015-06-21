@@ -56,8 +56,11 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void ToDictionary()
         {
-            var list = db.Set<User>().Where(x => x.LastLoginDate.Value.Date == DateTime.Now.Date).Select(x => new { x.Username,x.Id }).ToDictionary(x => x.Id);
+            var list = db.Set<User>().Where(x => x.LastLoginDate.Value.Date == DateTime.Now.Date).Select(x => new { x.Username, x.Id }).ToDictionary(x => x.Id);
         }
+
+
+
         [TestMethod]
         public void Select中取Date()
         {
@@ -615,5 +618,55 @@ namespace PPD.XLinq.UnitTests
             }
             db.SaveChanges();
         }
+
+        [TestMethod]
+        public void Take()
+        {
+            db.Set<User>().Take(1).ToList();
+        }
+        [TestMethod]
+        public void PageBySkipTake()
+        {
+            db.Set<User>().OrderBy(x => x.Id).Skip(1).Take(1).ToList();
+        }
+        [TestMethod]
+        public void PageBySkipTake1()
+        {
+            db.Set<User>().OrderBy(x => x.LastLoginDate.Value.Date).Skip(1).Take(1).ToList();
+        }
+        [TestMethod]
+        public void PageByPage()
+        {
+            db.Set<User>().OrderBy(x => x.LastLoginDate.Value.Date).Page(1, 1);
+        }
+
+        [TestMethod]
+        public void Page()
+        {
+            var query = (from user in db.Set<User>().NoLock()
+                         join order in db.Set<TransferOrder>().NoLock() on user.Id equals order.ToUserId into us
+                         from u in us.DefaultIfEmpty()
+                         join flow in db.Set<TransferWorkFlow>().NoLock() on u.ToUserId equals flow.UploadUserId
+                         join user1 in db.Set<User>().NoLock() on user.Password equals user1.Username into test
+                         from t in test.DefaultIfEmpty()
+                         where flow.UploadUserId == 1 && t.Username == "xxxx"
+                         orderby t.Username descending
+                         select new
+                         {
+                             t.Username,
+                             UserId = user.Id,
+                             user.LastLoginDate.Value.Date,
+                             flow.UploadFileName
+                         }).Distinct();
+            query.Page(1, 1);
+        }
+
+        [TestMethod]
+        public void FirstOrDefault()
+        {
+            db.Set<User>().FirstOrDefault(x => x.LastLoginDate == DateTime.Now.Date);
+            db.Set<User>().First(x => x.LastLoginDate == DateTime.Now.Date);
+        }
+
     }
 }

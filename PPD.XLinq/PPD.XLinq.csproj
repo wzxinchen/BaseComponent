@@ -87,6 +87,10 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <ProjectReference Include="..\Xinchen.DbUtils\Xinchen.DbUtils.csproj">
+      <Project>{12c3be5a-0ca9-4429-a14d-e86404f0457b}</Project>
+      <Name>Xinchen.DbUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Xinchen.DynamicObject\Xinchen.DynamicObject.csproj">
       <Project>{f321b0eb-9c51-428e-97f4-5f8a702ddcc5}</Project>
       <Name>Xinchen.DynamicObject</Name>

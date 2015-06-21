@@ -73,7 +73,7 @@ namespace PPD.XLinq
             }
             if (type.IsValueType || isValueType)
             {
-                if(ds.Tables[0].Rows.Count<=0)
+                if (ds.Tables[0].Rows.Count <= 0)
                 {
                     return default(TResult);
                 }
@@ -83,6 +83,16 @@ namespace PPD.XLinq
                     return default(TResult);
                 }
                 return (TResult)Convert.ChangeType(result, type);
+            }
+
+            if (TableInfoManager.IsEntity(type))
+            {
+                var results = EntityMapper.Map(type, ds);
+                if (results.Count <= 0)
+                {
+                    return default(TResult);
+                }
+                return (TResult)results[0];
             }
             throw new Exception();
             //if (type.IsGenericType)

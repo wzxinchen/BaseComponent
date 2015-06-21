@@ -16,6 +16,19 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         Dictionary<string, Expression> _aggregationExpressions;
         Dictionary<string, Column> _aggregationColumns;
         List<KeyValuePair<string, Column>> _sortColumns;
+        int _take = -1, _skip = -1;
+        public int Skip
+        {
+            get
+            {
+                return _skip;
+            }
+        }
+
+        public int Take
+        {
+            get { return _take; }
+        }
 
         public Dictionary<string, Column> AggregationColumns
         {
@@ -73,12 +86,27 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             _sortExpressions = new List<KeyValuePair<string, Expression>>();
             _sortColumns = new List<KeyValuePair<string, Column>>();
             _context = new TranslateContext();
+            _take = -1;
+            _skip = -1;
             _context.EntityType = ElementType;
             Visit(expression);
             if (_aggregationColumns.Count > 1)
             {
                 throw new Exception();
             }
+            if (_skip != -1 && _take != -1 && !_sortExpressions.Any())
+            {
+                throw new Exception("分页必须进行排序");
+            }
+
+            #region 解析Join子句
+            foreach (MethodCallExpression node in _joinExpressions)
+            {
+                VisitJoinExpression(node);
+                break;
+            }
+            #endregion
+
             #region 解析Select子句
             if (_selectExpression != null)
             {
@@ -97,13 +125,6 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             }
             #endregion
 
-            #region 解析Join子句
-            foreach (MethodCallExpression node in _joinExpressions)
-            {
-                VisitJoinExpression(node);
-                break;
-            }
-            #endregion
 
             #region 解析Where子句
             foreach (MethodCallExpression node in _whereExpressions)
@@ -126,7 +147,6 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             }
             #endregion
 
-
             #region 解析Lock子句
             foreach (var nolockExpression in _nolockExpressions)
             {
@@ -134,15 +154,19 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             }
             #endregion
 
+            #region 解析Sum、Avg等子句
             foreach (var aggreationExpression in _aggregationExpressions)
             {
                 VisitAggreationExpression(aggreationExpression);
             }
+            #endregion
 
+            #region 解析Order By子句
             foreach (var sortExpression in _sortExpressions)
             {
                 VisitSortExpression(sortExpression);
             }
+            #endregion
         }
 
         private void VisitSortExpression(KeyValuePair<string, Expression> sortExpression)
@@ -192,6 +216,10 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     case "SelectMany":
                         _joinExpressions.Add(node);
                         break;
+                    case "FirstOrDefault":
+                    case "First":
+                        _whereExpressions.Add(node);
+                        break;
                     case "DefaultIfEmpty":
 
                         break;
@@ -226,6 +254,12 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     case "OrderBy":
                     case "ThenBy":
                         _sortExpressions.Add(new KeyValuePair<string, Expression>("ASC", node.Arguments[1]));
+                        break;
+                    case "Take":
+                        _take = Convert.ToInt32(((ConstantExpression)node.Arguments[1]).Value);
+                        break;
+                    case "Skip":
+                        _skip = Convert.ToInt32(((ConstantExpression)node.Arguments[1]).Value);
                         break;
                     default:
                         throw new NotSupportedException("未支持的方法：" + node.Method.Name);
@@ -272,5 +306,6 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             visitor.Visit(node);
             NoLockTables.Add(visitor.ExtraObject.ToString());
         }
+
     }
 }

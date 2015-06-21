@@ -22,6 +22,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             BuildSql();
         }
 
+
         string GenJoinType(JoinType joinType)
         {
             if (joinType == JoinType.Inner)
@@ -236,6 +237,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         {
             if (parser.AggregationColumns.Count >= 1)
             {
+                parser.SortColumns.Clear();
                 var aggrColumn = parser.AggregationColumns.FirstOrDefault();
                 var columnString = string.Empty;
                 if (aggrColumn.Value != null)
@@ -266,9 +268,33 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     string col = FormatColumn(column);
                     fields.Add(col);
                 }
+                if (parser.Take != -1 && parser.Skip != -1)
+                {
+                    fields.Add(string.Format("ROW_NUMBER() OVER({0}) #index", FormatSortColumns()));
+                }
                 return (string.Join(",", fields));
             }
+        }
 
+        string FormatSortColumns()
+        {
+            var sortBuilder = new StringBuilder();
+            if (parser.SortColumns.Any())
+            {
+                sortBuilder.Append("ORDER BY ");
+                var sorts = new List<string>();
+                foreach (var sortColumn in parser.SortColumns)
+                {
+                    var col = string.Format("[{0}].[{1}]", GetTableAlias(sortColumn.Value.Name), sortColumn.Value.Alias ?? sortColumn.Value.Name);
+                    if (!string.IsNullOrWhiteSpace(sortColumn.Value.Converter))
+                    {
+                        col = string.Format(sortColumn.Value.Converter, col);
+                    }
+                    sorts.Add(col);
+                }
+                sortBuilder.Append(string.Join(",", sorts));
+            }
+            return sortBuilder.ToString();
         }
 
         internal void BuildSql()
@@ -283,6 +309,10 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             if (parser.Distinct)
             {
                 selectBuilder.Append(" DISTINCT ");
+            }
+            if (parser.Take != -1 && parser.Skip == -1)
+            {
+                selectBuilder.Append(" TOP " + parser.Take + " ");
             }
             var whereBuilder = new StringBuilder();
             var sortBuilder = new StringBuilder();
@@ -367,15 +397,9 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     }
                 }
 
-                if (parser.SortColumns.Any())
+                if (parser.Skip == -1 || parser.Take == -1)
                 {
-                    sortBuilder.Append("ORDER BY ");
-                    var sorts = new List<string>();
-                    foreach (var sortColumn in parser.SortColumns)
-                    {
-                        sorts.Add(string.Format("[{0}].[{1}] {2}", GetTableAlias(sortColumn.Value.Name), sortColumn.Value.Alias, sortColumn.Key));
-                    }
-                    sortBuilder.Append(string.Join(",", sorts));
+                    sortBuilder.Append(FormatSortColumns());
                 }
 
                 sqlBuilder.Clear();
@@ -417,21 +441,29 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     }
                 }
 
-                if (parser.SortColumns.Any())
+                if (parser.Skip == -1 || parser.Take == -1)
                 {
-                    sortBuilder.Append("ORDER BY ");
-                    var sorts = new List<string>();
-                    foreach (var sortColumn in parser.SortColumns)
-                    {
-                        sorts.Add(string.Format("[{0}].[{1}] {2}", GetTableAlias(sortColumn.Value.Name), sortColumn.Value.Name, sortColumn.Key));
-                    }
-                    sortBuilder.Append(string.Join(",", sorts));
+                    sortBuilder.Append(FormatSortColumns());
                 }
+
                 sqlBuilder.Clear();
                 sqlBuilder.AppendFormat("{0} {1} {2} {3}", selectBuilder.ToString(), fromBuilder.ToString(), whereBuilder.ToString(), sortBuilder.ToString());
             }
+
+            var sql = sqlBuilder.ToString();
+            if (parser.Take != -1 && parser.Skip != -1)
+            {
+                sqlBuilder.Clear();
+                var fields = new List<string>();
+                foreach (var item in parser.Columns)
+                {
+                    fields.Add(string.Format("[_indexTable].[{0}]", item.Alias ?? item.MemberInfo.Name));
+                }
+                sqlBuilder.AppendFormat("SELECT {0} FROM ({1}) _indexTable where [_indexTable].[#index] BETWEEN {2} AND {3}", string.Join(",", fields), sql, parser.Skip, parser.Take);
+                sql = sqlBuilder.ToString();
+            }
             //}
-            Result.CommandText = sqlBuilder.ToString();
+            Result.CommandText = sql;
         }
     }
 }

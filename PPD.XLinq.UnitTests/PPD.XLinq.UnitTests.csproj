@@ -69,6 +69,10 @@
       <Project>{282712cc-624e-4a88-9e17-4f3f9000368a}</Project>
       <Name>PPD.XLinq</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Xinchen.DbUtils\Xinchen.DbUtils.csproj">
+      <Project>{12c3be5a-0ca9-4429-a14d-e86404f0457b}</Project>
+      <Name>Xinchen.DbUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Xinchen.Utils\Xinchen.Utils.csproj">
       <Project>{6be86e93-58b7-463a-a4d9-7f7da8a0089a}</Project>
       <Name>Xinchen.Utils</Name>

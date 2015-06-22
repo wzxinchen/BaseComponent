@@ -45,12 +45,16 @@ namespace PPD.XLinq
                 {
                     return _tableTypeMap[entityType];
                 }
+                if(!IsEntity(entityType))
+                {
+                    throw new Exception("编译器生成的类型不能作为实体类型");
+                }
                 var tableAttr = (PPD.XLinq.Attributes.TableAttribute)entityType.GetCustomAttributes(_tableAttrType, true).FirstOrDefault();
                 Table table = new Table();
                 string tableName, dbName = null;
                 if (tableAttr == null)
                 {
-                    tableName = entityType.Name;
+                    tableName = StringHelper.ToPlural(entityType.Name);
                 }
                 else
                 {

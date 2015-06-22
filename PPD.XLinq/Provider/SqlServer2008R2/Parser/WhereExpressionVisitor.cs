@@ -11,7 +11,8 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
     public class WhereExpressionVisitor : ExpressionVisitorBase
     {
         Dictionary<string, Join> _joins;
-        public WhereExpressionVisitor(TranslateContext context):base(context)
+        public WhereExpressionVisitor(TranslateContext context)
+            : base(context)
         {
             this._joins = context.Joins;
         }
@@ -91,7 +92,8 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         class BinaryExpressionVisitor : ExpressionVisitorBase
         {
             Dictionary<string, Join> _joins;
-            public BinaryExpressionVisitor(TranslateContext context):base(context)
+            public BinaryExpressionVisitor(TranslateContext context)
+                : base(context)
             {
                 this._joins = context.Joins;
             }
@@ -121,9 +123,9 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     case ExpressionType.Divide:
                         Token = ParseMathBinary((BinaryExpression)node);
                         return node;
-                    //case ExpressionType.Not:
-                    //    Result = ParseNotExpression((UnaryExpression)node);
-                    //    return node;
+                    case ExpressionType.Not:
+                        Token = ParseNotExpression((UnaryExpression)node);
+                        return node;
                     case ExpressionType.Call:
                         Token = ParseMethodCallExpression((MethodCallExpression)node);
                         return node;
@@ -139,33 +141,74 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                 return visitor.Token;
             }
 
-            //private object ParseNotExpression(UnaryExpression unaryExpression)
-            //{
-            //    var operand = unaryExpression.Operand;
-            //    if (operand is MemberExpression)
-            //    {
-            //        var visitor = new MemberExpressionVisitor(_joins);
-            //        visitor.Visit(operand);
-            //        if (visitor.Type == MemberExpressionType.Object)
-            //        {
-            //            return !((bool)visitor.Result);
-            //        }
-            //        else if (visitor.Type == MemberExpressionType.Column)
-            //        {
-            //            throw new Exception("不支持");
-            //        }
-            //    }
-            //    else if (operand is MethodCallExpression)
-            //    {
-            //        var visitor = new MethodCallExpressionVisitor(_joins);
-            //        visitor.Visit(operand);
-            //    }
-            //    else
-            //    {
-            //        throw new Exception("不支持");
-            //    }
-            //    throw new Exception();
-            //}
+            Token ParseNotExpression(UnaryExpression unaryExpression)
+            {
+                var operand = unaryExpression.Operand;
+                if (operand is MemberExpression)
+                {
+                    var visitor = new MemberExpressionVisitor(Context);
+                    visitor.Visit(operand);
+                    switch (visitor.Token.Type)
+                    {
+                        case TokenType.Object:
+                            if (visitor.Token.IsBool())
+                            {
+                                return Token.Create(!((bool)visitor.Token.Object));
+                            }
+                            else
+                            {
+                                throw new Exception("不支持");
+                            }
+                        case TokenType.Column:
+                            if (operand.Type == typeof(bool) || operand.Type == typeof(bool?))
+                            {
+                                return Token.Create(new Condition()
+                                {
+                                    CompareType = CompareType.Equal,
+                                    Left = Token.Create(1),
+                                    Right = Token.Create(1)
+                                });
+                            }
+                            return Token.Create(new Condition()
+                            {
+                                Left = visitor.Token,
+                                CompareType = CompareType.Not
+                            });
+                        default:
+                            throw new Exception();
+                    }
+                }
+                else if (operand is MethodCallExpression)
+                {
+                    var visitor = new MethodCallExpressionVisitor(Context);
+                    visitor.Visit(operand);
+                    var token = visitor.Token;
+                    switch (token.Type)
+                    {
+                        case TokenType.Column:
+                            return Token.Create(new Condition()
+                            {
+                                Left = token,
+                                CompareType = CompareType.Not
+                            });
+                        case TokenType.Condition:
+                            return Token.Create(new Condition()
+                            {
+                                Left = Token.Create(token.Condition),
+                                CompareType = CompareType.Not
+                            });
+                        case TokenType.Object:
+                            return Token.Create(!((bool)token.Object));
+                        default:
+                            throw new Exception();
+                    }
+                }
+                else
+                {
+                    throw new Exception("不支持");
+                }
+                throw new Exception();
+            }
 
             Token ParseMathBinary(BinaryExpression node)
             {

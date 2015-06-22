@@ -87,10 +87,10 @@ namespace PPD.XLinq
             {
                 ConnectionString = ConfigurationManager.ConnectionStrings[pm.ConnectionStringName].ConnectionString;
                 SequenceTable = pm.SequenceTable;
-                if (string.IsNullOrWhiteSpace(SequenceTable))
-                {
-                    SequenceTable = "Sequences";
-                }
+            }
+            if(string.IsNullOrWhiteSpace(SequenceTable))
+            {
+                SequenceTable = "Sequences";
             }
         }
         #region 开始

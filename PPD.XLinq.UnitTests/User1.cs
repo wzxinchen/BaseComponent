@@ -1,23 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace PPD.XLinq.UnitTests.Model
+namespace PPD.XLinq.UnitTests
 {
-
-    [PPD.XLinq.Attributes.Table("ppdai","User")]
-    //[Table("User")]
-    public class User
+    public class User1
     {
-        [Column("UserId"),Key,DatabaseGenerated(DatabaseGeneratedOption.None)]
         public int Id { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
-        public bool IsEnabled { get; set; }
+        public bool IsEnabled1 { get; set; }
         //public DateTime? VerifyTime { get; set; }
         //public DateTime RegTime { get; set; }
         //public int Age { get; set; }

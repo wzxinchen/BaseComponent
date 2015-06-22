@@ -5,7 +5,6 @@
     using System.Runtime.CompilerServices;
 
     [Serializable]
-    [Table("UserRoles")]
     public class UserRole
     {
         public virtual int Id { get; set; }

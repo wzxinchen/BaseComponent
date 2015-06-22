@@ -310,7 +310,12 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             {
                 selectBuilder.Append(" DISTINCT ");
             }
-            if (parser.Take != -1 && parser.Skip == -1)
+
+            if (parser.IsCallAny)
+            {
+                selectBuilder.Append(" TOP 1 ");
+            }
+            else if (parser.Take != -1 && parser.Skip == -1)
             {
                 selectBuilder.Append(" TOP " + parser.Take + " ");
             }

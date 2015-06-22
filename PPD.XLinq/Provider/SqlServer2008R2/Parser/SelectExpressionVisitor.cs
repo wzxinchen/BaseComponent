@@ -15,9 +15,11 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         IReadOnlyCollection<Expression> _columnParams;
         private Type _elementType;
         private Dictionary<string, Join> _Joins;
+        private Stack<Expression> _memberExpressions = new Stack<Expression>();
         public List<Column> Columns { get; private set; }
 
-        public SelectExpressionVisitor(TranslateContext context):base(context)
+        public SelectExpressionVisitor(TranslateContext context)
+            : base(context)
         {
             // TODO: Complete member initialization
             this._elementType = context.EntityType;
@@ -25,37 +27,62 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             Columns = new List<Column>();
         }
 
+        void ParseEntityType(Type type)
+        {
+            var tableSechma = TableInfoManager.GetTable(type);
+            var tableInfo = new Table()
+            {
+                DataBase = tableSechma.DataBase,
+                Name = tableSechma.Name,
+                Type = tableSechma.Type
+            };
+            var columns = tableSechma.Columns;
+            foreach (var columnValue in columns.Values)
+            {
+                var column = new Column();
+                column.Name = columnValue.Name;
+                column.DataType = columnValue.PropertyInfo.PropertyType;
+                column.MemberInfo = columnValue.PropertyInfo;
+                column.Table = tableInfo;
+                Columns.Add(column);
+                Context.Columns.Add(columnValue.Name, column);
+            }
+        }
+
         public override Expression Visit(Expression node)
         {
             if (node == null)
             {
-                var properties = _elementType.GetProperties();
-                var firstProperty = properties.FirstOrDefault();
-                if (firstProperty == null)
-                {
-                    throw new Exception("实体类没有字段");
-                }
-                var tableSechma = TableInfoManager.GetTable(firstProperty.DeclaringType);
-                var tableInfo = new Table()
-                {
-                    DataBase = tableSechma.DataBase,
-                    Name = tableSechma.Name,
-                    Type = tableSechma.Type
-                };
-                var columns = tableSechma.Columns;
-                foreach (var property in properties)
-                {
-                    var column = new Column();
-                    column.Name = columns.Get(property.Name).Name;
-                    column.DataType = property.PropertyType;
-                    column.MemberInfo = property;
-                    column.Table = tableInfo;
-                    Columns.Add(column);
-                    Context.Columns.Add(property.Name, column);
-                }
+                ParseEntityType(_elementType);
                 return node;
             }
+            _memberExpressions.Push(node);
             return base.Visit(node);
+        }
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            var type = node.Type;
+            while (!TableInfoManager.IsEntity(type))
+            {
+                var exp = _memberExpressions.Pop();
+                type = exp.Type;
+            }
+            ParseEntityType(type);
+            return node;
+        }
+
+        protected override Expression VisitMemberInit(MemberInitExpression node)
+        {
+            foreach (MemberAssignment binding in node.Bindings)
+            {
+                var visitor = new MemberExpressionVisitor(Context);
+                visitor.Visit(binding.Expression);
+                visitor.SelectedColumn.Alias = binding.Member.Name;
+                Columns.Add(visitor.SelectedColumn);
+                Context.Columns.Add(binding.Member.Name, visitor.SelectedColumn);
+            }
+            return node;
         }
 
         protected override Expression VisitNew(NewExpression node)
@@ -70,7 +97,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                 Columns.Add(visitor.SelectedColumn);
                 Context.Columns.Add(member.Name, visitor.SelectedColumn);
             }
-            return base.VisitNew(node);
+            return node;
         }
 
         class MemberExpressionVisitor : ExpressionVisitorBase
@@ -81,7 +108,8 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             Stack<MemberInfo> _memberInfoStack = new Stack<MemberInfo>();
             private MemberInfo _tableMember;
             private Dictionary<string, Join> _Joins;
-            public MemberExpressionVisitor(TranslateContext context):base(context)
+            public MemberExpressionVisitor(TranslateContext context)
+                : base(context)
             {
                 _Joins = context.Joins;
                 SelectedColumn = new Column();
@@ -121,14 +149,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 
             SchemaModel.Table GetTable(Type tableType)
             {
-                var tableInfo = TableInfoManager.GetTable(tableType);
                 if (ParserUtils.IsAnonymousType(tableType))
                 {
                     _tableMember = _memberInfoStack.Pop();
                     tableType = ((PropertyInfo)_tableMember).PropertyType;
                     return GetTable(tableType);
                 }
-                return tableInfo;
+                return TableInfoManager.GetTable(tableType); ;
             }
 
             protected override Expression VisitConstant(ConstantExpression node)
@@ -218,9 +245,9 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     SelectedColumn = new Column()
                     {
                         DataType = columnType,
-                        Name = tableInfo.Columns.Get(columnMember.Name).Name, 
+                        Name = tableInfo.Columns.Get(columnMember.Name).Name,
                         Table = table,
-                        MemberInfo=columnMember
+                        MemberInfo = columnMember
                     };
                     SelectedColumn.Converter = GetConverter();
                 }

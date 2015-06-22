@@ -8,6 +8,7 @@
     using System.Reflection;
     using System.Runtime.InteropServices;
     using Xinchen.DynamicObject;
+    using Xinchen.Utils;
     public class EntityMapper
     {
         //private static Dictionary<Type, Dictionary<string, Func<object, object>>> _objectGetters = new Dictionary<Type, Dictionary<string, Func<object, object>>>();
@@ -155,7 +156,14 @@
                         {
                             underlyingType = propertyType;
                         }
-                        obj2 = Convert.ChangeType(obj2, underlyingType);
+                        if (underlyingType.IsEnum)
+                        {
+                            obj2 = Enum.Parse(underlyingType, Convert.ToString(obj2));
+                        }
+                        else
+                        {
+                            obj2 = Convert.ChangeType(obj2, underlyingType);
+                        }
                         propertySetters[str](local, obj2);
                     }
                 }
@@ -197,19 +205,31 @@
                 else
                 {
                     local = ExpressionReflector.CreateInstance(objectType);
-                    foreach (string str in propertySetters.Keys)
+                    foreach (DataColumn column in ds.Tables[0].Columns)
                     {
-                        object obj2 = row[str];
+                        object obj2 = row[column];
                         if (obj2 != DBNull.Value)
                         {
-                            Type propertyType = properties[str].PropertyType;
+                            var property = properties.Get(column.ColumnName);
+                            if (property == null)
+                            {
+                                continue;
+                            }
+                            Type propertyType = property.PropertyType;
                             Type underlyingType = Nullable.GetUnderlyingType(propertyType);
                             if (underlyingType == null)
                             {
                                 underlyingType = propertyType;
                             }
-                            obj2 = Convert.ChangeType(obj2, underlyingType);
-                            propertySetters[str](local, obj2);
+                            if(underlyingType.IsEnum)
+                            {
+                                obj2 = Enum.Parse(underlyingType, Convert.ToString(obj2));
+                            }
+                            else
+                            {
+                                obj2 = Convert.ChangeType(obj2, underlyingType);
+                            }
+                            propertySetters.Get(column.ColumnName)(local, obj2);
                         }
                     }
                 }

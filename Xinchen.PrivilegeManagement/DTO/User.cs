@@ -7,7 +7,6 @@
     using Xinchen.PrivilegeManagement.Enums;
 
     [Serializable]
-    [Table("Users")]
     public class User
     {
         public virtual DateTime CreateTime { get; set; }

@@ -3,9 +3,9 @@
     using System;
     using System.ComponentModel.DataAnnotations.Schema;
     using System.Runtime.CompilerServices;
+    using Xinchen.PrivilegeManagement.Enums;
 
     [Serializable]
-    [Table("UserMenus")]
     public class UserMenu
     {
         public int ChildCount { get; set; }
@@ -20,7 +20,7 @@
 
         public int Sort { get; set; }
 
-        public int Status { get; set; }
+        public BaseStatuses Status { get; set; }
 
         public string Url { get; set; }
     }

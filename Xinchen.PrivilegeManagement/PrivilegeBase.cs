@@ -177,7 +177,7 @@
                     {
                         loginPage = loginPage.Replace("{url}", this._httpContext.Request.Url.ToString());
                     }
-                    this._httpContext.Response.Redirect(loginPage);
+                    this._httpContext.Response.Redirect(loginPage, true);
                 }
             }
             else if (this.IsLoginPage())
@@ -187,7 +187,7 @@
                 {
                     homePage = ConfigManager.PrivilegeProvider.HomePage;
                 }
-                this._httpContext.Response.Redirect(homePage);
+                this._httpContext.Response.Redirect(homePage, true);
             }
         }
 
@@ -288,33 +288,75 @@
         {
             IList<UserMenu> list;
             string sql = string.Empty;
+            var repo = ConfigManager.PrivilegeProvider.GetRepository();
             if (this._userInfo.Roles.Count<KeyValuePair<int, Role>>(x => (x.Value.Name == ConfigManager.PrivilegeProvider.SystemRoleName)) > 0)
             {
-                sql = "SELECT menus.Id,\r\n                    menus.Name,menus.Url,menus.Description,menus.ParentId,menus.Sort,menus.Status,\r\n                    (SELECT COUNT(1) FROM dbo.Menus childs WHERE childs.ParentId=menus.Id) ChildCount\r\n                    FROM dbo.Menus menus WHERE menus.Status=" + (int)BaseStatuses.Valid + @" and menus.ParentId=" + parentId.ToString() + " order by sort";
-                list = ConfigManager.PrivilegeProvider.GetRepository().Queries<UserMenu>(sql);
+                var menus = repo.Use<Menu>().GetList(x => x.Status == BaseStatuses.Valid);
+                list = (from menu in menus
+                        where menu.ParentId == parentId
+                        select new UserMenu()
+                        {
+                            ChildCount = (from subMenu in menus where subMenu.ParentId == menu.Id select subMenu).Count(),
+                            Description = menu.Description,
+                            Id = menu.Id,
+                            Name = menu.Name,
+                            ParentId = menu.ParentId,
+                            Sort = menu.Sort,
+                            Status = menu.Status,
+                            Url = menu.Url
+                        }).ToList();
+                //sql = "SELECT menus.Id,\r\n                    menus.Name,menus.Url,menus.Description,menus.ParentId,menus.Sort,menus.Status,\r\n                    (SELECT COUNT(1) FROM dbo.Menus childs WHERE childs.ParentId=menus.Id) ChildCount\r\n                    FROM dbo.Menus menus WHERE menus.Status=" + (int)BaseStatuses.Valid + @" and menus.ParentId=" + parentId.ToString() + " order by sort";
+                //list = ConfigManager.PrivilegeProvider.GetRepository().Queries<UserMenu>(sql);
             }
             else
             {
                 list = new List<UserMenu>();
                 if (UserInfo.Roles.Count > 0)
                 {
-                    sql = "SELECT  menus.Id ,\r\n        menus.Name ,\r\n        menus.Sort ,\r\n        menus.ParentId ,\r\n        menus.Description ,\r\n        menus.Url ,\r\n        menus.Status ,\r\n        menus.Level,\r\n                     (SELECT COUNT(1) FROM dbo.Menus childs WHERE childs.ParentId=menus.Id) ChildCount\r\nFROM    dbo.RolePrivileges rolePrivileges\r\n        INNER JOIN dbo.Menus menus ON menus.PrivilegeId = rolePrivileges.PrivilegeId\r\n        WHERE rolePrivileges.RoleId in(" + string.Join<int>(",", this.UserInfo.Roles.Keys) + ") order by sort";
-                    IList<UserMenu> list2 = ConfigManager.PrivilegeProvider.GetRepository().Queries<UserMenu>(sql);
-                    foreach (UserMenu menu in list2)
-                    {
-                        if (menu.ParentId == parentId)
-                        {
-                            list.Add(menu);
-                        }
-                        else
-                        {
-                            UserMenu modelBySql = this.PrivilegeContextProvider.GetRepository().Queries<UserMenu>("SELECT  menus.Id ,\r\n        menus.Name ,\r\n        menus.Sort ,\r\n        menus.ParentId ,\r\n        menus.Description ,\r\n        menus.Url ,\r\n        menus.Status ,\r\n        menus.Level,\r\n                   (SELECT COUNT(1) FROM dbo.Menus childs WHERE childs.ParentId=menus.Id) ChildCount\r\nFROM   dbo.Menus menus where Id=" + menu.ParentId.ToString()).FirstOrDefault();
-                            if ((modelBySql != null) && (modelBySql.ParentId == parentId))
+                    var menus = from menu in repo.Use<Menu>().Query
+                                join roleprivilege in repo.Use<RolePrivilege>().Query on menu.PrivilegeId equals roleprivilege.PrivilegeId
+                                select new
+                                {
+                                    roleprivilege.RoleId,
+                                    menu.Id,
+                                    menu.Name,
+                                    menu.ParentId,
+                                    menu.PrivilegeId,
+                                    menu.Sort,
+                                    menu.Status,
+                                    menu.Url,
+                                    menu.Description
+                                };
+                    list = (from menu in menus
+                            where UserInfo.Roles.Keys.Contains(menu.RoleId) && menu.ParentId == parentId
+                            select new UserMenu()
                             {
-                                list.Add(modelBySql);
-                            }
-                        }
-                    }
+                                ChildCount = (from subMenu in menus where subMenu.ParentId == menu.Id select subMenu).Count(),
+                                Description = menu.Description,
+                                Id = menu.Id,
+                                Name = menu.Name,
+                                ParentId = menu.ParentId,
+                                Sort = menu.Sort,
+                                Status = menu.Status,
+                                Url = menu.Url
+                            }).ToList();
+                    //sql = "SELECT  menus.Id ,\r\n        menus.Name ,\r\n        menus.Sort ,\r\n        menus.ParentId ,\r\n        menus.Description ,\r\n        menus.Url ,\r\n        menus.Status ,\r\n        menus.Level,\r\n                     (SELECT COUNT(1) FROM dbo.Menus childs WHERE childs.ParentId=menus.Id) ChildCount\r\nFROM    dbo.RolePrivileges rolePrivileges\r\n        INNER JOIN dbo.Menus menus ON menus.PrivilegeId = rolePrivileges.PrivilegeId\r\n        WHERE rolePrivileges.RoleId in(" + string.Join<int>(",", this.UserInfo.Roles.Keys) + ") order by sort";
+                    //IList<UserMenu> list2 = ConfigManager.PrivilegeProvider.GetRepository().Queries<UserMenu>(sql);
+                    //foreach (UserMenu menu in list2)
+                    //{
+                    //    if (menu.ParentId == parentId)
+                    //    {
+                    //        list.Add(menu);
+                    //    }
+                    //    else
+                    //    {
+                    //        UserMenu modelBySql = this.PrivilegeContextProvider.GetRepository().Queries<UserMenu>("SELECT  menus.Id ,\r\n        menus.Name ,\r\n        menus.Sort ,\r\n        menus.ParentId ,\r\n        menus.Description ,\r\n        menus.Url ,\r\n        menus.Status ,\r\n        menus.Level,\r\n                   (SELECT COUNT(1) FROM dbo.Menus childs WHERE childs.ParentId=menus.Id) ChildCount\r\nFROM   dbo.Menus menus where Id=" + menu.ParentId.ToString()).FirstOrDefault();
+                    //        if ((modelBySql != null) && (modelBySql.ParentId == parentId))
+                    //        {
+                    //            list.Add(modelBySql);
+                    //        }
+                    //    }
+                    //}
                 }
             }
             return (from x in list
@@ -693,7 +735,7 @@
             }
             else if (HttpContext.Current.Request.Url.ToString().Contains(privilegeProvider.RegisterAdminPage.Replace("~", "")))
             {
-                HttpContext.Current.Response.Redirect(privilegeProvider.LoginPage);
+                HttpContext.Current.Response.Redirect(privilegeProvider.LoginPage, true);
             }
         }
 

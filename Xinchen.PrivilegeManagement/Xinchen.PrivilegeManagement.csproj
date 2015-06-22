@@ -48,7 +48,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigManager.cs" />
-    <Compile Include="DTO\Sequence.cs" />
     <Compile Include="Enums\BaseStatuses.cs" />
     <Compile Include="Enums\YNStatuses.cs" />
     <Compile Include="DTO\DepartmentPrivilege.cs" />

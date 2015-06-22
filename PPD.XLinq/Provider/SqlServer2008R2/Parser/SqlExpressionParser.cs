@@ -11,12 +11,20 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
     internal class SqlExpressionParser : ExpressionVisitor
     {
         //SqlServer2008R2Provider provider = null;
-        bool _distinct = false;
+        bool _distinct = false,_isCallAny=false;
         List<KeyValuePair<string, Expression>> _sortExpressions;
         Dictionary<string, Expression> _aggregationExpressions;
         Dictionary<string, Column> _aggregationColumns;
         List<KeyValuePair<string, Column>> _sortColumns;
         int _take = -1, _skip = -1;
+        
+        public bool IsCallAny
+        {
+            get
+            {
+                return _isCallAny;
+            }
+        }
         public int Skip
         {
             get
@@ -78,6 +86,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         internal void Parse(Expression expression)
         {
             _distinct = false;
+            _isCallAny = false;
             _aggregationExpressions = new Dictionary<string, Expression>();
             Conditions = new List<Token>();
             _nolockExpressions = new List<Expression>();
@@ -112,12 +121,12 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             {
                 var unary = _selectExpression as UnaryExpression;
                 var lambdaExp = unary.Operand as LambdaExpression;
-                var newExp = lambdaExp.Body as NewExpression;
-                if (newExp == null)
-                {
-                    throw new NotSupportedException("Select子句中只能使用new表达式");
-                }
-                VisitSelectExpression(newExp);
+                //var newExp = lambdaExp.Body as NewExpression;
+                //if (newExp == null)
+                //{
+                //    throw new NotSupportedException("Select子句中只能使用new表达式");
+                //}
+                VisitSelectExpression(lambdaExp.Body);
             }
             else
             {
@@ -261,6 +270,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     case "Skip":
                         _skip = Convert.ToInt32(((ConstantExpression)node.Arguments[1]).Value);
                         break;
+                    case "Any":
+                        _isCallAny = true;
+                        if (node.Arguments.Count > 1)
+                        {
+                            _whereExpressions.Add(node);
+                        }
+                        break;
                     default:
                         throw new NotSupportedException("未支持的方法：" + node.Method.Name);
                 }
@@ -293,7 +309,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 
 
 
-        private void VisitSelectExpression(NewExpression node)
+        private void VisitSelectExpression(Expression node)
         {
             var visitor = new SelectExpressionVisitor(_context);
             visitor.Visit(node);

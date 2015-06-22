@@ -13,6 +13,8 @@ namespace Xinchen.ApplicationBase.Mvc.Filters
         protected override bool AuthorizeCore(System.Web.HttpContextBase httpContext)
         {
             var privilege = PrivilegeFactory.GetPrivilege();
+            privilege.PrivilegeBase.Setup();
+            privilege.PrivilegeBase.CheckLoginStatus();
             return privilege.PrivilegeBase.CheckPrivilege(Privilege);
             //if (!privilege.PrivilegeBase.CheckPrivilege(Privilege))
             //{

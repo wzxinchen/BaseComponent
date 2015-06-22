@@ -20,6 +20,14 @@ namespace Xinchen.Utils
             }
             return Instance;
         }
+        public static TObject GetObject(Func<TObject> createInstanceAction)
+        {
+            if (Instance == null)
+            {
+                Instance = createInstanceAction();
+            }
+            return Instance;
+        }
         static TObject Instance { get; set; }
     }
 }

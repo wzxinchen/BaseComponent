@@ -6,7 +6,6 @@
     using Xinchen.PrivilegeManagement.Enums;
 
     [Serializable]
-    [Table("Roles")]
     public class Role
     {
         public virtual int? DepartmentId { get; set; }

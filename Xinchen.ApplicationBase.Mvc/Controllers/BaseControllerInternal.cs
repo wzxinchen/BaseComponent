@@ -128,11 +128,10 @@ namespace Xinchen.ApplicationBase.Mvc
         }
 
         protected Privilege privilege;
+
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
-            this.privilege = PrivilegeFactory.GetPrivilege();
-            this.privilege.PrivilegeBase.Setup();
-            this.privilege.PrivilegeBase.CheckLoginStatus();
+            privilege = PrivilegeFactory.GetPrivilege();
         }
     }
 }

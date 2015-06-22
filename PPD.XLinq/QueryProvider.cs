@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.ObjectMapper;
@@ -14,8 +15,10 @@ namespace PPD.XLinq
     {
         Expression _expression;
         Type _elementType;
-        public QueryProvider(Type elementType)
+        DataContext _context;
+        public QueryProvider(DataContext context,Type elementType)
         {
+            _context = context;
             _elementType = elementType;
         }
         public IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression)
@@ -26,7 +29,15 @@ namespace PPD.XLinq
 
         public IQueryable CreateQuery(System.Linq.Expressions.Expression expression)
         {
-            throw new NotImplementedException();
+            Type elementType = expression.Type.GetGenericArguments()[0];
+            try
+            {
+                return (IQueryable)Activator.CreateInstance(typeof(DataQuery<>).MakeGenericType(elementType), new object[] { this, expression });
+            }
+            catch (TargetInvocationException tie)
+            {
+                throw tie.InnerException;
+            }
         }
 
         public TResult Execute<TResult>(System.Linq.Expressions.Expression expression)
@@ -38,7 +49,15 @@ namespace PPD.XLinq
             var executor = provider.CreateSqlExecutor();
             var ds = executor.ExecuteDataSet(parser.Result.CommandText, parser.Result.Parameters);
             Type type = typeof(TResult);
-            //var method = ((MethodCallExpression)expression).Method;
+            if (expression.NodeType == ExpressionType.Call)
+            {
+                var method = ((MethodCallExpression)expression).Method;
+                if (method.Name == "Any")
+                {
+                    object r = ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0;
+                    return (TResult)r;
+                }
+            }
             //if (ds.Tables.Count <= 0 || ds.Tables[0].Rows.Count <= 0)
             //{
             //    var typeArg = type.GetGenericArguments()[0];
@@ -120,7 +139,8 @@ namespace PPD.XLinq
 
         public object Execute(System.Linq.Expressions.Expression expression)
         {
-            throw new NotImplementedException();
+            var type = expression.Type.GetGenericArguments()[0];
+            return ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(type).Invoke(this,new object[]{ expression});
         }
     }
 }

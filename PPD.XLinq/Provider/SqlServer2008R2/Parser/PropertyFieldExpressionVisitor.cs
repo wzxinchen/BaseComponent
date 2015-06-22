@@ -170,14 +170,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 
         SchemaModel.Table GetTable(Type tableType)
         {
-            var tableInfo = TableInfoManager.GetTable(tableType);
             if (ParserUtils.IsAnonymousType(tableType))
             {
                 _tableMember = ((MemberExpression)_memberInfos.Pop()).Member;
                 tableType = ((PropertyInfo)_tableMember).PropertyType;
                 return GetTable(tableType);
             }
-            return tableInfo;
+            return TableInfoManager.GetTable(tableType);
         }
 
         string GetConverter(string converter)

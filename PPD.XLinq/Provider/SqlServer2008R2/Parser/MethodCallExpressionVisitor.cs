@@ -15,14 +15,12 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
     public class MethodCallExpressionVisitor : ExpressionVisitorBase
     {
         Dictionary<string, Join> _joins;
-        private Dictionary<string, Column> _columns;
 
         public MethodCallExpressionVisitor(TranslateContext context)
             : base(context)
         {
             // TODO: Complete member initialization
             this._joins = context.Joins;
-            this._columns = context.Columns;
         }
 
         Token ParseArgument(Expression argExp)

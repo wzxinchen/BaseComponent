@@ -42,7 +42,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
             }
             if (list.Count <= 10)
             {
-                if(executor==null)
+                if (executor == null)
                 {
                     executor = new SqlExecutor();
                 }
@@ -97,7 +97,11 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                 var dataTable = new DataTable();
                 foreach (var column in table.Columns.Values)
                 {
-                    dataTable.Columns.Add(column.Name);
+                    var dataColumn = new DataColumn();
+                    dataColumn.ColumnName = column.Name;
+                    dataColumn.DataType = TypeHelper.GetUnderlyingType(column.PropertyInfo.PropertyType);
+                    dataTable.Columns.Add(dataColumn);
+                    sqlBulkCopy.ColumnMappings.Add(column.Name, column.Name);
                 }
                 foreach (var item in list)
                 {

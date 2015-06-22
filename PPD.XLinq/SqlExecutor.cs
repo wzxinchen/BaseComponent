@@ -5,7 +5,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Xinchen.Utils;
 namespace PPD.XLinq
 {
     public class SqlExecutor
@@ -50,8 +50,24 @@ namespace PPD.XLinq
             {
                 var parameter = dbCommand.CreateParameter();
                 parameter.ParameterName = parameterName;
-                parameter.Value = parameters[parameterName];
-                parameter.DbType = _typeMapper[parameter.Value.GetType()];
+                var value = parameters.Get(parameterName);
+                if (value != null)
+                {
+                    parameter.Value = value;
+                    var propertyType = parameter.Value.GetType();
+                    if (propertyType.IsEnum)
+                    {
+                        parameter.DbType = DbType.Int32;
+                    }
+                    else
+                    {
+                        parameter.DbType = _typeMapper.Get(propertyType);
+                    }
+                }
+                else
+                {
+                    parameter.Value = DBNull.Value;
+                }
                 dbCommand.Parameters.Add(parameter);
             }
             return dbCommand;

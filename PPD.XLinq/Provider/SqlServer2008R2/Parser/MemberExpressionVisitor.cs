@@ -13,14 +13,12 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
     public class MemberExpressionVisitor : ExpressionVisitorBase
     {
         Dictionary<string, Join> _joins;
-        Dictionary<string, Column> _columns;
         /// <summary>
         /// 参数可传null，该参数主要用于创建该表达式中可能出现的对Entity的访问
         /// </summary>
         public MemberExpressionVisitor(TranslateContext context):base(context)
         {
             this._joins = context.Joins;
-            _columns = context.Columns;
         }
         public override System.Linq.Expressions.Expression Visit(System.Linq.Expressions.Expression node)
         {

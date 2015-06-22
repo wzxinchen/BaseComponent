@@ -10,7 +10,7 @@ using System.Collections.Generic;
 namespace PPD.XLinq.UnitTests
 {
     [TestClass]
-    public class UnitTest1
+    public class QueryTest
     {
         TestDataContext db = ObjectCache<TestDataContext>.GetObject();
         public DateTime Test
@@ -251,6 +251,58 @@ namespace PPD.XLinq.UnitTests
         }
 
         [TestMethod]
+        public void Enum()
+        {
+            db.Set<EnumTest>().Where(x => x.Value == T.A).ToList();
+        }
+        [TestMethod]
+        public void SelectSimpleMemberInit()
+        {
+            var query = from user in db.Set<User>()
+                        select new User
+                        {
+                            Id = user.Id,
+                            Password = user.Password,
+                            Username = user.Username,
+                            LastLoginDate = user.LastLoginDate.Value.Date
+                        };
+            query.ToList();
+        }
+        [TestMethod]
+        public void SelectSimpleMemberInit1()
+        {
+            var query = from user in db.Set<User>()
+                        select new User1()
+                        {
+                            Id = user.Id,
+                            Password = user.Password,
+                            LastLoginDate = user.LastLoginDate.Value.Date
+                        };
+            query.ToList();
+        }
+        [TestMethod]
+        public void SelectMemberInit()
+        {
+            var query = from user in db.Set<User>()
+                        join order in db.Set<TransferOrder>() on user.Id equals order.ToUserId
+                        join flow in db.Set<TransferWorkFlow>() on order.ToUserId equals flow.UploadUserId
+                        where flow.UploadUserId == 1
+                        select new EnumTest1
+                        {
+                            UserId = user.Id,
+                            FileName = flow.UploadFileName,
+                            ToUsername = order.ToUsername,
+                            LastLoginDate = user.LastLoginDate.Value.Date
+                        };
+            query.ToList();
+        }
+
+        public enum T
+        {
+            A = 1, B = 1
+        }
+
+        [TestMethod]
         public void ColumnContainsString()
         {
             db.Set<User>().Where(x => x.Password.Contains("xxxxxxxxxxxx")).ToList();
@@ -259,6 +311,24 @@ namespace PPD.XLinq.UnitTests
         public void ColumnNotContainsString()
         {
             db.Set<User>().Where(x => !x.Password.Contains("xxxxxxxxxxxx")).ToList();
+        }
+        [TestMethod]
+        public void NotVar()
+        {
+            var a = false;
+            db.Set<User>().Where(x => !a && !x.Password.Contains("xxxxxxxxxxxx")).ToList();
+        }
+        [TestMethod]
+        public void NotMethod()
+        {
+            var a = false;
+            db.Set<User>().Where(x => !Convert.ToBoolean(a) && !x.Password.Contains("xxxxxxxxxxxx")).ToList();
+        }
+        [TestMethod]
+        public void NotColumn()
+        {
+            var a = false;
+            db.Set<User>().Where(x => !x.IsEnabled && !x.Password.Contains("xxxxxxxxxxxx")).ToList();
         }
 
         [TestMethod]
@@ -365,6 +435,24 @@ namespace PPD.XLinq.UnitTests
             query1.ToList();
         }
         [TestMethod]
+        public void SelectVar()
+        {
+            var query1 = from user in db.Set<User>()
+                         join user1 in db.Set<User>() on user.Password equals user1.Username
+                         select user;
+            query1.ToList();
+        }
+        [TestMethod]
+        public void JoinSelectVar()
+        {
+            var query1 = from user in db.Set<User>()
+                         join user1 in db.Set<User>() on user.Password equals user1.Username
+                         join order in db.Set<TransferOrder>() on user.Id equals order.Id
+                         join wf in db.Set<TransferWorkFlow>() on order.ToUserId equals wf.UploadUserId
+                         select user1;
+            query1.ToList();
+        }
+        [TestMethod]
         public void LeftJoinWhere()
         {
             var query = from user in db.Set<User>()
@@ -432,35 +520,35 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void 复杂方法调用()
         {
-            var t = new UnitTest1();
+            var t = new QueryTest();
             var query = from user in db.Set<User>() where t.Test1() select user;
             query.ToList();
         }
         [TestMethod]
         public void Count()
         {
-            var t = new UnitTest1();
+            var t = new QueryTest();
             var query = from user in db.Set<User>() where t.Test1() select user;
             query.Count();
         }
         [TestMethod]
         public void Count1()
         {
-            var t = new UnitTest1();
+            var t = new QueryTest();
             var query = from user in db.Set<User>() where t.Test1() select user;
             query.Count(x => x.Password == string.Empty);
         }
         [TestMethod]
         public void Sum()
         {
-            var t = new UnitTest1();
+            var t = new QueryTest();
             var query = from user in db.Set<User>() where t.Test1() select user;
             query.Sum(x => x.Id);
         }
         [TestMethod]
         public void Avg()
         {
-            var t = new UnitTest1();
+            var t = new QueryTest();
             var query = from user in db.Set<User>() where t.Test1() select user;
             query.Average(x => x.Id);
         }
@@ -560,64 +648,7 @@ namespace PPD.XLinq.UnitTests
             query.Average(x => x.Id);
         }
 
-        [TestMethod]
-        public void InsertBigData()
-        {
-            var dbUser = db.Set<User>();
-            for (int i = 0; i < 20000; i++)
-            {
-                dbUser.Add(new User()
-                {
-                    LastLoginDate = DateTime.Now,
-                    Password = "111",
-                    Username = "zzzz"
-                });
-            }
-            db.SaveChanges();
-        }
-        [TestMethod]
-        public void InsertIdentityBigData()
-        {
-            var dbUser = db.Set<TransferOrder>();
-            for (int i = 0; i < 2000000; i++)
-            {
-                dbUser.Add(new TransferOrder()
-                {
-                    ToUserId = 1,
-                    ToUsername = "zz"
-                });
-            }
-            db.SaveChanges();
-        }
-        [TestMethod]
-        public void InsertSmallData()
-        {
-            var dbUser = db.Set<User>();
-            for (int i = 0; i < 5; i++)
-            {
-                dbUser.Add(new User()
-                {
-                    LastLoginDate = DateTime.Now,
-                    Password = "111",
-                    Username = "zzzz"
-                });
-            }
-            db.SaveChanges();
-        }
-        [TestMethod]
-        public void InsertSmallIdentityData()
-        {
-            var dbUser = db.Set<TransferOrder>();
-            for (int i = 0; i < 5; i++)
-            {
-                dbUser.Add(new TransferOrder()
-                {
-                    ToUserId = 1,
-                    ToUsername = "zz"
-                });
-            }
-            db.SaveChanges();
-        }
+        
 
         [TestMethod]
         public void Take()
@@ -668,5 +699,11 @@ namespace PPD.XLinq.UnitTests
             db.Set<User>().First(x => x.LastLoginDate == DateTime.Now.Date);
         }
 
+        [TestMethod]
+        public void Any()
+        {
+            db.Set<User>().Any();
+            db.Set<User>().Any(x => x.Id == 1);
+        }
     }
 }

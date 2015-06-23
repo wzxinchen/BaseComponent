@@ -14,14 +14,14 @@ namespace PPD.XLinq.UnitTests.Model
     public class User
     {
         [Column("UserId"),Key,DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public int Id { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public bool IsEnabled { get; set; }
+        public virtual int Id { get; set; }
+        public virtual string Username { get; set; }
+        public virtual string Password { get; set; }
+        public virtual bool IsEnabled { get; set; }
         //public DateTime? VerifyTime { get; set; }
         //public DateTime RegTime { get; set; }
         //public int Age { get; set; }
 
-        public DateTime? LastLoginDate { get; set; }
+        public virtual DateTime? LastLoginDate { get; set; }
     }
 }

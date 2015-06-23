@@ -48,7 +48,7 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void SelectOrderBigData1()
         {
-            var list = db.Set<TransferOrder>().Select(x => new { x.Id, x.ToUserId, x.ToUsername }).Where(x => x.Id == 1).OrderBy(x => x.Id).ThenBy(x => x.ToUserId).ToList();
+            var list = db.Set<TransferOrder>().Select(x => new { x.Id, x.ToUserId, ToUsername = x.ToUsername }).Where(x => x.Id == 1).OrderBy(x => x.Id).ThenBy(x => x.ToUserId).ToList();
         }
 
 
@@ -196,7 +196,7 @@ namespace PPD.XLinq.UnitTests
                         {
                             UserId = user.Id,
                             flow.UploadFileName,
-                            order.ToUsername
+                            ToUsername = order.ToUsername
                         };
             query.ToList();
         }
@@ -211,7 +211,7 @@ namespace PPD.XLinq.UnitTests
                         {
                             UserId = user.Id,
                             flow.UploadFileName,
-                            order.ToUsername
+                            ToUsername = order.ToUsername
                         };
             query.ToList();
         }
@@ -226,7 +226,7 @@ namespace PPD.XLinq.UnitTests
                         {
                             UserId = user.Id,
                             flow.UploadFileName,
-                            order.ToUsername,
+                            ToUsername = order.ToUsername,
                             user.LastLoginDate.Value.Date
                         };
             query.ToList();

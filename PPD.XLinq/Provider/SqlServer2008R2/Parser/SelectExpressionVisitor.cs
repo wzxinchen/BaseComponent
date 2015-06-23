@@ -11,8 +11,6 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 {
     public class SelectExpressionVisitor : ExpressionVisitorBase
     {
-        IReadOnlyCollection<MemberInfo> _aliaMembers;
-        IReadOnlyCollection<Expression> _columnParams;
         private Type _elementType;
         private Dictionary<string, Join> _Joins;
         private Stack<Expression> _memberExpressions = new Stack<Expression>();

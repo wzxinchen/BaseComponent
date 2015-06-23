@@ -183,13 +183,6 @@
                 object local = null;
                 if (objectType.IsSealed)
                 {
-                    //var ctors = objectType.GetConstructors();
-                    //if (ctors.Length <= 0)
-                    //{
-                    //    throw new MissingMethodException("构造方法不存在");
-                    //}
-                    //var ctor = ctors[0];
-                    //var parameters = ctor.GetParameters();
                     var parameterObjects = new List<object>();
                     foreach (DataColumn column in ds.Tables[0].Columns)
                     {

@@ -11,18 +11,35 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
     internal class SqlExpressionParser : ExpressionVisitor
     {
         //SqlServer2008R2Provider provider = null;
-        bool _distinct = false,_isCallAny=false;
+        bool _distinct = false, _isCallAny = false, _isDelete, _isUpdate;
         List<KeyValuePair<string, Expression>> _sortExpressions;
         Dictionary<string, Expression> _aggregationExpressions;
         Dictionary<string, Column> _aggregationColumns;
         List<KeyValuePair<string, Column>> _sortColumns;
+        public Dictionary<string, object> UpdateResult { get; private set; }
+
         int _take = -1, _skip = -1;
-        
+
+        public bool IsUpdate
+        {
+            get
+            {
+                return _isUpdate;
+            }
+        }
+
         public bool IsCallAny
         {
             get
             {
                 return _isCallAny;
+            }
+        }
+        public bool IsDelete
+        {
+            get
+            {
+                return _isDelete;
             }
         }
         public int Skip
@@ -68,11 +85,10 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         public IList<Token> Conditions { get; private set; }
         List<Expression> _nolockExpressions;
         Expression _selectExpression;
-        Expression _sumExpression;
-        Expression _averageExpression;
         List<KeyValuePair<string, Expression>> _expression = new List<KeyValuePair<string, Expression>>();
         List<Expression> _whereExpressions = new List<Expression>();
         List<Expression> _joinExpressions = new List<Expression>();
+        Expression _updateExpression;
         private TranslateContext _context;
         public Dictionary<string, Join> Joins
         {
@@ -87,6 +103,9 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         {
             _distinct = false;
             _isCallAny = false;
+            _isDelete = false;
+            _isUpdate = false;
+            UpdateResult = new Dictionary<string, object>();
             _aggregationExpressions = new Dictionary<string, Expression>();
             Conditions = new List<Token>();
             _nolockExpressions = new List<Expression>();
@@ -176,6 +195,23 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                 VisitSortExpression(sortExpression);
             }
             #endregion
+
+            VisitUpdateExpression(_updateExpression);
+        }
+
+        private void VisitUpdateExpression(Expression updateExpression)
+        {
+            if (updateExpression == null)
+            {
+                return;
+            }
+            var visitor = new MemberExpressionVisitor(_context);
+            visitor.Visit(updateExpression);
+            if (visitor.Token.Type != TokenType.Object)
+            {
+                throw new NotSupportedException("不支持");
+            }
+            UpdateResult = (Dictionary<string, object>)visitor.Token.Object;
         }
 
         private void VisitSortExpression(KeyValuePair<string, Expression> sortExpression)
@@ -227,7 +263,10 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                         break;
                     case "FirstOrDefault":
                     case "First":
-                        _whereExpressions.Add(node);
+                        if (node.Arguments.Count > 1)
+                        {
+                            _whereExpressions.Add(node);
+                        }
                         break;
                     case "DefaultIfEmpty":
 
@@ -277,6 +316,17 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                             _whereExpressions.Add(node);
                         }
                         break;
+                    case "Delete":
+                        _isDelete = true;
+                        if (node.Arguments.Count > 1)
+                        {
+                            _whereExpressions.Add(node);
+                        }
+                        break;
+                    case "Update":
+                        _isUpdate = true;
+                        _updateExpression = node.Arguments[1];
+                        break;
                     default:
                         throw new NotSupportedException("未支持的方法：" + node.Method.Name);
                 }
@@ -322,6 +372,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             visitor.Visit(node);
             NoLockTables.Add(visitor.ExtraObject.ToString());
         }
+
 
     }
 }

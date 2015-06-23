@@ -25,7 +25,38 @@ namespace PPD.XLinq
         /// <returns></returns>
         public static bool IsEntity(Type type)
         {
-            return AttributeHelper.GetAttribute<CompilerGeneratedAttribute>(type) == null;
+            return DataContext.IsEntity(type);
+        }
+
+        /// <summary>
+        /// 将给定的表结构信息转换成完整表名
+        /// </summary>
+        /// <param name="table"></param>
+        /// <returns></returns>
+        public static string GetTableName(Table table)
+        {
+            var tableName = string.Empty;
+            if (!string.IsNullOrWhiteSpace(table.DataBase))
+            {
+                tableName = string.Format("[{0}].dbo.", table.DataBase);
+            }
+            tableName = string.Format("{0}[{1}]", tableName, table.Name);
+            return tableName;
+        }
+        /// <summary>
+        /// 将给定的表结构信息转换成完整表名
+        /// </summary>
+        /// <param name="table"></param>
+        /// <returns></returns>
+        public static string GetTableName(TranslateModel.Table table)
+        {
+            var tableName = string.Empty;
+            if (!string.IsNullOrWhiteSpace(table.DataBase))
+            {
+                tableName = string.Format("[{0}].dbo.", table.DataBase);
+            }
+            tableName = string.Format("{0}[{1}]", tableName, table.Name);
+            return tableName;
         }
 
         /// <summary>
@@ -35,22 +66,24 @@ namespace PPD.XLinq
         /// <returns></returns>
         public static Table GetTable(Type entityType)
         {
-            if (_tableTypeMap.ContainsKey(entityType))
+            var table = _tableTypeMap.Get(entityType);
+            if (table != null)
             {
-                return _tableTypeMap[entityType];
+                return table;
             }
             lock (_tableTypeMap)
             {
-                if (_tableTypeMap.ContainsKey(entityType))
+                table = _tableTypeMap.Get(entityType);
+                if (table != null)
                 {
-                    return _tableTypeMap[entityType];
+                    return table;
                 }
-                if(!IsEntity(entityType))
+                if (!IsEntity(entityType))
                 {
-                    throw new Exception("编译器生成的类型不能作为实体类型");
+                    throw new Exception("不是实体类型");
                 }
                 var tableAttr = (PPD.XLinq.Attributes.TableAttribute)entityType.GetCustomAttributes(_tableAttrType, true).FirstOrDefault();
-                Table table = new Table();
+                table = new Table();
                 string tableName, dbName = null;
                 if (tableAttr == null)
                 {

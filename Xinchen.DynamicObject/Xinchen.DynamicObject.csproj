@@ -49,6 +49,7 @@
     <Compile Include="ExpressionReflector.cs" />
     <Compile Include="DynamicProxy.cs" />
     <Compile Include="ExpressionReflectorCore.cs" />
+    <Compile Include="IGetUpdatedValues.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

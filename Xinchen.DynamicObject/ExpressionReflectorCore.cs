@@ -38,7 +38,7 @@ namespace Xinchen.DynamicObject
                     if (!_propertyInfos.TryGetValue(entityType, out properties))
                     {
                         properties = new Dictionary<string, PropertyInfo>();
-                        foreach (var property in entityType.GetProperties())
+                        foreach (var property in entityType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty | BindingFlags.GetProperty))
                         {
                             var propertyType = property.PropertyType;
                             if (!EntityPropertyTypes.Contains(propertyType) && !propertyType.IsEnum)

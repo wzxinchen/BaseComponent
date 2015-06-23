@@ -10,8 +10,10 @@ using Xinchen.DynamicObject;
 using Xinchen.Utils;
 namespace PPD.XLinq.Provider.SqlServer2008R2
 {
-    internal class EntityAdder : EntityAddBase
+    internal class EntityOperator : EntityOperatorBase
     {
+        SqlExecutor sqlExecutor = new SqlExecutor();
+        #region 批量插入
         internal override int InsertEntities(ArrayList list)
         {
             if (list.Count <= 0)
@@ -25,7 +27,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
             var count = 0;
             var maxIndex = 0;
             bool autoIncreament = keyColumn != null && keyColumn.IsAutoIncreament;
-            SqlExecutor executor = null;
+            //SqlExecutor executor = null;
             var getters = ExpressionReflector.GetGetters(type);
             var setters = ExpressionReflector.GetSetters(type);
             Action<object, object> keySetter = null;
@@ -35,17 +37,19 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
             }
             if (!autoIncreament)
             {
-                executor = new SqlExecutor();
-                var obj = executor.ExecuteScalar(string.Format("select isnull(max(Count),0) from {0} where Name='{1}'", DataContext.SequenceTable, table.Name), new Dictionary<string, object>());
-                executor.ExecuteNonQuery(string.Format("insert into {0}(Name,Count) values('{1}',{2})", DataContext.SequenceTable, table.Name, 0), new Dictionary<string, object>());
-                maxIndex = Convert.ToInt32(obj);
+                var obj = sqlExecutor.ExecuteScalar(string.Format("select max(Count) from {0} where Name='{1}'", DataContext.SequenceTable, table.Name), new Dictionary<string, object>());
+                if (obj == DBNull.Value)
+                {
+                    sqlExecutor.ExecuteNonQuery(string.Format("insert into {0}(Name,Count) values('{1}',{2})", DataContext.SequenceTable, table.Name, 0), new Dictionary<string, object>());
+                }
+                else
+                {
+                    maxIndex = Convert.ToInt32(obj);
+                }
             }
             if (list.Count <= 10)
             {
-                if (executor == null)
-                {
-                    executor = new SqlExecutor();
-                }
+                #region 使用Insert语句插入
                 var insertStart = "insert into {0}({1}) values{2}";
                 var tableName = string.Empty;
                 if (!string.IsNullOrWhiteSpace(table.DataBase))
@@ -87,10 +91,12 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                     values.Add(string.Format("({0})", string.Join(",", value)));
                 }
                 insertStart = string.Format(insertStart, tableName, string.Join(",", fields), string.Join(",", values));
-                count = executor.ExecuteNonQuery(insertStart, sqlParameters);
+                count = sqlExecutor.ExecuteNonQuery(insertStart, sqlParameters);
+                #endregion
             }
             else
             {
+                #region 使用SqlBulkCopy插入
                 var sqlBulkCopy = new SqlBulkCopy(DataContext.ConnectionString);
                 sqlBulkCopy.DestinationTableName = "dbo.[" + table.Name + "]";
                 sqlBulkCopy.BatchSize = list.Count / 10;
@@ -118,13 +124,54 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                 }
                 sqlBulkCopy.WriteToServer(dataTable);
                 sqlBulkCopy.Close();
+                #endregion
                 count = list.Count;
             }
             if (!autoIncreament)
             {
-                executor.ExecuteNonQuery(string.Format("update {0} set [Count]={1} where Name='{2}'", DataContext.SequenceTable, maxIndex, table.Name), new Dictionary<string, object>());
+                sqlExecutor.ExecuteNonQuery(string.Format("update {0} set [Count]={1} where Name='{2}'", DataContext.SequenceTable, maxIndex, table.Name), new Dictionary<string, object>());
             }
             return count;
+        }
+        #endregion
+
+        internal override int UpdateValues(SchemaModel.Column keyColumn, SchemaModel.Table table, Dictionary<string, object> values)
+        {
+            var keyValue = values.Get(keyColumn.Name);
+            if (keyValue == null)
+            {
+                throw new InvalidOperationException("字典未传入主键");
+            }
+            var updateSql = "UPDATE {0} SET {1} WHERE {2}";
+            var tableName = TableInfoManager.GetTableName(table);
+            var sqlParameters = new Dictionary<string, object>();
+            var setts = new List<string>();
+            var alias = string.Empty;
+            foreach (var key in values.Keys)
+            {
+                if (key == keyColumn.Name)
+                {
+                    continue;
+                }
+                alias = ParserUtils.GenerateAlias(key);
+                var set = string.Format("[{0}] = @{1}", key, alias);
+                sqlParameters.Add(alias, values.Get(key));
+                setts.Add(set);
+            }
+            alias = ParserUtils.GenerateAlias(keyColumn.Name);
+            var condition = string.Format("[{0}] = @{1}", keyColumn.Name, alias);
+            sqlParameters.Add(alias, keyValue);
+            updateSql = string.Format(updateSql, tableName, string.Join(",", setts), condition);
+            return sqlExecutor.ExecuteNonQuery(updateSql, sqlParameters);
+        }
+
+        internal override int Delete(SchemaModel.Column keyColumn, SchemaModel.Table table, params int[] ids)
+        {
+            if (ids.Length <= 0) return 0;
+            var deleteSql = "DELETE FROM {0} WHERE [{1}] IN ({2})";
+            var tableName = TableInfoManager.GetTableName(table);
+            deleteSql = string.Format(deleteSql, tableName, keyColumn.Name, string.Join(",", ids));
+            return sqlExecutor.ExecuteNonQuery(deleteSql, new Dictionary<string, object>());
         }
     }
 }

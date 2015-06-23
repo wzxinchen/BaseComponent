@@ -38,6 +38,23 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             return base.Visit(node);
         }
 
+        protected override Expression VisitMemberInit(MemberInitExpression node)
+        {
+            var results = new Dictionary<string,object>();
+            foreach (MemberAssignment binding in node.Bindings)
+            {
+                var visitor = new MemberExpressionVisitor(Context);
+                visitor.Visit(binding.Expression);
+                if (visitor.Token.Type != TokenType.Object)
+                {
+                    throw new NotSupportedException("不支持");
+                }
+                results.Add(binding.Member.Name,visitor.Token.Object);
+            }
+            Token = Token.Create(results);
+            return node;
+        }
+
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             MethodCallExpressionVisitor visitor = new MethodCallExpressionVisitor(Context);

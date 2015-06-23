@@ -47,6 +47,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             {
                 return tableName;
             }
+
             foreach (var join in parser.Joins.Values)
             {
                 if (join.Left.Name == columnName)
@@ -165,25 +166,26 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 
         private string BuildSql(Column column)
         {
-            if (string.IsNullOrWhiteSpace(column.Table.DataBase))
+            var col = string.Empty;
+            //if (string.IsNullOrWhiteSpace(column.Table.DataBase))
+            //{
+            col = string.Format("[{0}].[{1}]", GetTableAlias(column.Name), column.Name);
+            //}
+            //else
+            //{
+            //    col = string.Format("[{0}].dbo.[{1}].[{2}]", column.Table.DataBase, GetTableAlias(column.Name), column.Name);
+            //}
+            if (!string.IsNullOrWhiteSpace(column.Converter))
             {
-                var col = string.Format("[{0}].[{1}]", GetTableAlias(column.Name), column.Name);
-                if (!string.IsNullOrWhiteSpace(column.Converter))
+                col = string.Format(column.Converter, col);
+                var matches = Regex.Matches(col, @"@param\d+");
+                for (int i = 0; i < matches.Count; i++)
                 {
-                    col = string.Format(column.Converter, col);
-                    var matches = Regex.Matches(col, @"@param\d+");
-                    for (int i = 0; i < matches.Count; i++)
-                    {
-                        var match = matches[i];
-                        Result.Parameters.Add(match.Value, column.ConverterParameters[i]);
-                    }
+                    var match = matches[i];
+                    Result.Parameters.Add(match.Value, column.ConverterParameters[i]);
                 }
-                return col;
             }
-            else
-            {
-                throw new Exception();
-            }
+            return col;
         }
 
         //string BuildCondition(object obj)
@@ -297,12 +299,34 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             return sortBuilder.ToString();
         }
 
-        internal void BuildSql()
+        string BuildWhere(IList<Token> conditions)
         {
-            Result = new ParseResult();
+            var whereBuilder = new StringBuilder();
+            if (conditions.Any())
+            {
+                var filters = new List<string>();
+                foreach (var condition in conditions)
+                {
+                    var filter = BuildSql(condition);
+                    if (string.IsNullOrWhiteSpace(filter))
+                    {
+                        continue;
+                    }
+                    filters.Add(filter);
+                }
+                if (filters.Any())
+                {
+                    whereBuilder.Append("WHERE ");
+                    whereBuilder.Append(string.Join(" AND ", filters));
+                }
+            }
+            return whereBuilder.ToString();
+        }
+
+        void BuildSelectSql()
+        {
             var columns = parser.Columns;
             var conditions = parser.Conditions;
-            //var table = columns.FirstOrDefault().Table;
             var joins = parser.Joins;
             var fromBuilder = new StringBuilder("FROM ");
             var selectBuilder = new StringBuilder("SELECT ");
@@ -322,18 +346,18 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             var whereBuilder = new StringBuilder();
             var sortBuilder = new StringBuilder();
             var sqlBuilder = new StringBuilder();
-            //string tableName = string.Empty;
             if (joins != null && joins.Count > 0)
             {
                 var firstJoin = joins.Values.FirstOrDefault();
                 var leftColumn = firstJoin.Left;
                 var leftTable = leftColumn.Table;
-                if (!string.IsNullOrWhiteSpace(leftTable.DataBase))
-                {
-                    fromBuilder.AppendFormat("[{0}].", leftTable.DataBase);
-                }
-                fromBuilder.AppendFormat("[{0}] ", leftTable.Name);
-                fromBuilder.AppendFormat("[{0}]", leftTable.Alias);
+                fromBuilder.Append(TableInfoManager.GetTableName(leftTable));
+                //if (!string.IsNullOrWhiteSpace(leftTable.DataBase))
+                //{
+                //    fromBuilder.AppendFormat("[{0}].dbo.", leftTable.DataBase);
+                //}
+                //fromBuilder.AppendFormat("[{0}] ", leftTable.Name);
+                fromBuilder.AppendFormat(" [{0}]", leftTable.Alias);
                 if (parser.NoLockTables.Contains(leftTable.Name))
                 {
                     fromBuilder.Append(" WITH (NOLOCK) ");
@@ -341,13 +365,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                 fromBuilder.Append(GenJoinType(firstJoin.JoinType));
                 var rightColumn = firstJoin.Right;
                 var rightTable = rightColumn.Table;
-                if (!string.IsNullOrWhiteSpace(rightTable.DataBase))
-                {
-                    fromBuilder.AppendFormat("[{0}].", rightTable.DataBase);
-                }
-                fromBuilder.AppendFormat("[{0}] ", rightTable.Name);
-                //tableName = ParserUtils.GenerateAlias(rightTable.Name);
-                fromBuilder.AppendFormat("[{0}]", rightTable.Alias);
+                fromBuilder.Append(TableInfoManager.GetTableName(rightTable));
+                //if (!string.IsNullOrWhiteSpace(rightTable.DataBase))
+                //{
+                //    fromBuilder.AppendFormat("[{0}].dbo.", rightTable.DataBase);
+                //}
+                //fromBuilder.AppendFormat("[{0}] ", rightTable.Name);
+                fromBuilder.AppendFormat(" [{0}]", rightTable.Alias);
                 if (parser.NoLockTables.Contains(rightTable.Name))
                 {
                     fromBuilder.Append(" WITH (NOLOCK) ");
@@ -364,13 +388,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     fromBuilder.Append(GenJoinType(join.JoinType));
                     rightColumn = join.Right;
                     rightTable = rightColumn.Table;
-                    if (!string.IsNullOrWhiteSpace(rightTable.DataBase))
-                    {
-                        fromBuilder.AppendFormat("[{0}].", rightTable.DataBase);
-                    }
-                    fromBuilder.AppendFormat("[{0}] ", rightTable.Name);
-                    //tableName = ParserUtils.GenerateAlias(rightTable.Name);
-                    fromBuilder.AppendFormat("[{0}]", rightTable.Alias);
+                    fromBuilder.Append(TableInfoManager.GetTableName(rightTable));
+                    //if (!string.IsNullOrWhiteSpace(rightTable.DataBase))
+                    //{
+                    //    fromBuilder.AppendFormat("[{0}].dbo.", rightTable.DataBase);
+                    //}
+                    //fromBuilder.AppendFormat("[{0}] ", rightTable.Name);
+                    fromBuilder.AppendFormat(" [{0}]", rightTable.Alias);
                     if (parser.NoLockTables.Contains(rightTable.Name))
                     {
                         fromBuilder.Append(" WITH (NOLOCK) ");
@@ -385,21 +409,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 
                 if (conditions.Any())
                 {
-                    var filters = new List<string>();
-                    foreach (var condition in conditions)
-                    {
-                        var filter = BuildSql(condition);
-                        if (string.IsNullOrWhiteSpace(filter))
-                        {
-                            continue;
-                        }
-                        filters.Add(filter);
-                    }
-                    if (filters.Any())
-                    {
-                        whereBuilder.Append("WHERE ");
-                        whereBuilder.Append(string.Join(" AND ", filters));
-                    }
+                    whereBuilder.Append(BuildWhere(conditions));
                 }
 
                 if (parser.Skip == -1 || parser.Take == -1)
@@ -414,12 +424,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             {
                 fromBuilder = new StringBuilder("FROM ");
                 var table = columns.FirstOrDefault().Table;
-                if (!string.IsNullOrWhiteSpace(table.DataBase))
-                {
-                    fromBuilder.AppendFormat("[{0}].", table.DataBase);
-                }
+                fromBuilder.Append(TableInfoManager.GetTableName(table));
+                //if (!string.IsNullOrWhiteSpace(table.DataBase))
+                //{
+                //    fromBuilder.AppendFormat("[{0}].dbo.", table.DataBase);
+                //}
                 tableName = ParserUtils.GenerateAlias(table.Name);
-                fromBuilder.AppendFormat("[{0}] [{1}]", table.Name, tableName);
+                fromBuilder.AppendFormat(" [{0}]", tableName);
                 if (parser.NoLockTables.Contains(table.Name))
                 {
                     fromBuilder.Append(" WITH (NOLOCK) ");
@@ -429,21 +440,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 
                 if (conditions.Any())
                 {
-                    var filters = new List<string>();
-                    foreach (var condition in conditions)
-                    {
-                        var filter = BuildSql(condition);
-                        if (string.IsNullOrWhiteSpace(filter))
-                        {
-                            continue;
-                        }
-                        filters.Add(filter);
-                    }
-                    if (filters.Any())
-                    {
-                        whereBuilder.Append("WHERE ");
-                        whereBuilder.Append(string.Join(" AND ", filters));
-                    }
+                    whereBuilder.Append(BuildWhere(conditions));
                 }
 
                 if (parser.Skip == -1 || parser.Take == -1)
@@ -467,8 +464,43 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                 sqlBuilder.AppendFormat("SELECT {0} FROM ({1}) _indexTable where [_indexTable].[#index] BETWEEN {2} AND {3}", string.Join(",", fields), sql, parser.Skip, parser.Take);
                 sql = sqlBuilder.ToString();
             }
-            //}
             Result.CommandText = sql;
+        }
+
+        void BuildDeleteSql()
+        {
+            var where = string.Empty;
+            var table = TableInfoManager.GetTable(ElementType);
+            tableName = table.Name;
+            var tableFullName = TableInfoManager.GetTableName(table);
+            if (parser.Conditions.Any())
+            {
+                where = BuildWhere(parser.Conditions);
+            }
+            var sql = "DELETE FROM {0} {1}";
+            sql = string.Format(sql, tableFullName, where);
+            Result.CommandText = sql;
+        }
+
+        void BuildUpdateSql()
+        {
+
+        }
+
+        internal void BuildSql()
+        {
+            Result = new ParseResult();
+            if (parser.IsDelete)
+            {
+                BuildDeleteSql();
+                return;
+            }
+            if (parser.IsUpdate)
+            {
+                BuildUpdateSql();
+                return;
+            }
+            BuildSelectSql();
         }
     }
 }

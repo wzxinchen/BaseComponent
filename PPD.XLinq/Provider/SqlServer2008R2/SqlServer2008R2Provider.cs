@@ -17,9 +17,9 @@ namespace PPD.XLinq.Provider
             return new Parser();
         }
 
-        internal override SqlServer2008R2.EntityAddBase CreateEntityAdder()
+        internal override SqlServer2008R2.EntityOperatorBase CreateEntityOperator()
         {
-            return new EntityAdder();
+            return new EntityOperator();
         }
     }
 }

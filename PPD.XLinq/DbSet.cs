@@ -10,10 +10,12 @@ using System.Threading.Tasks;
 
 namespace PPD.XLinq
 {
-    public class DbSet<T> : IQueryable<T>, IOrderedQueryable<T>, IOperateAddingEntities
+    public class DbSet<T> : IQueryable<T>, IOrderedQueryable<T>, IEntityOperator
     {
         DataQuery<T> _dataQuery;
         HashSet<T> _entitiesToAdd = new HashSet<T>();
+        HashSet<T> _entitiesToEdit = new HashSet<T>();
+        HashSet<T> _entitiesToRemove = new HashSet<T>();
         public DbSet(QueryProvider provider)
         {
             _dataQuery = new DataQuery<T>(provider);
@@ -52,7 +54,7 @@ namespace PPD.XLinq
             return obj;
         }
 
-        ArrayList IOperateAddingEntities.GetAddingEntities()
+        ArrayList IEntityOperator.GetAdding()
         {
             var list = new ArrayList();
             foreach (var item in _entitiesToAdd)
@@ -62,10 +64,66 @@ namespace PPD.XLinq
             return list;
         }
 
-        public void ClearAddingEntities()
+        public void ClearAdding()
         {
             lock (_entitiesToAdd)
                 _entitiesToAdd.Clear();
+        }
+
+
+        public void AddEditing(IList list)
+        {
+            foreach (T item in list)
+            {
+                _entitiesToEdit.Add(item);
+            }
+        }
+
+
+        public IList GetEditing()
+        {
+            var list = new ArrayList();
+            foreach (var item in _entitiesToEdit)
+            {
+                list.Add(item);
+            }
+            return list;
+        }
+
+        public void ClearEditing()
+        {
+            _entitiesToEdit.Clear();
+        }
+
+
+        public Type GetEntityType()
+        {
+            return ElementType;
+        }
+
+        public void Remove(T item)
+        {
+            if (_entitiesToRemove.Contains(item))
+            {
+                return;
+            }
+            _entitiesToRemove.Add(item);
+        }
+
+
+        public IList GetRemoving()
+        {
+            var list = new ArrayList();
+            foreach (var item in _entitiesToRemove)
+            {
+                list.Add(item);
+            }
+            return list;
+        }
+
+        public void ClearRemoving()
+        {
+            _entitiesToRemove.Clear();
         }
     }
 }

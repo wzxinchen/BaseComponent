@@ -12,7 +12,7 @@ namespace PPD.XLinq.Attributes
         public TableAttribute(string dbName, string tableName)
             : base(tableName)
         {
-
+            DataBaseName = dbName;
         }
     }
 }

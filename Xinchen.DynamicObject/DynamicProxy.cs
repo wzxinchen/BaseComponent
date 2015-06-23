@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
-
+using Xinchen.Utils;
 namespace Xinchen.DynamicObject
 {
     public class DynamicProxy
@@ -32,8 +32,7 @@ namespace Xinchen.DynamicObject
         }
 
         public const MethodAttributes GetSetMethodAttributes =
-            MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.CheckAccessOnOverride |
-            MethodAttributes.Virtual | MethodAttributes.HideBySig;
+            MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.CheckAccessOnOverride | MethodAttributes.HideBySig | MethodAttributes.Virtual;
 
         /// <summary>
         /// 创建动态程序集,返回AssemblyBuilder
@@ -65,28 +64,24 @@ namespace Xinchen.DynamicObject
             return dynamicAssembly.DefineDynamicModule(DynamicModuleName);
         }
 
-        /// <summary>
-        /// 创建动态代理类,重写属性Get Set 方法,并监控属性的Set方法,把变更的属性名加入到list集合中,需要监控的属性必须是virtual
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public static Type CreateDynamicProxyType<T>()
+        public static Type CreateDynamicProxyType(Type type)
         {
-            Type typeNeedProxy = typeof(T);
-            if (dynmicProxyList.ContainsKey(typeNeedProxy))
+            var proxyType = dynmicProxyList.Get(type);
+            if (proxyType != null)
             {
-                return dynmicProxyList[typeNeedProxy];
+                return proxyType;
             }
-            bool save = false;
+            bool save = true;
             AssemblyBuilder assemblyBuilder = DefineDynamicAssembly(save);
             //动态创建模块
             ModuleBuilder moduleBuilder = DefineDynamicModule(assemblyBuilder, save);
-            string proxyClassName = string.Format(ProxyClassNameFormater + typeNeedProxy.GetHashCode().ToString(), typeNeedProxy.Name);
+            string proxyClassName = string.Format(ProxyClassNameFormater + type.GetHashCode().ToString(), type.Name);
             //动态创建类代理
-            TypeBuilder typeBuilderProxy = moduleBuilder.DefineType(proxyClassName, TypeAttributes.Public, typeNeedProxy);
+            TypeBuilder typeBuilderProxy = moduleBuilder.DefineType(proxyClassName, TypeAttributes.Public, type);
             CustomAttributeBuilder cab =
                 new CustomAttributeBuilder(typeof(SerializableAttribute).GetConstructor(new Type[0]), new object[0]);
             typeBuilderProxy.SetCustomAttribute(cab);
+            typeBuilderProxy.AddInterfaceImplementation(typeof(IGetUpdatedValues));
             //定义一个变量存放属性变更名
             FieldBuilder fbModifiedPropertyNames = typeBuilderProxy.DefineField(ModifiedPropertyNamesFieldName,
                 ModifiedPropertyNamesType, FieldAttributes.Public);
@@ -106,7 +101,7 @@ namespace Xinchen.DynamicObject
             ilgCtor.Emit(OpCodes.Ret); //返回
 
             //获取被代理对象的所有属性,循环属性进行重写
-            PropertyInfo[] properties = typeNeedProxy.GetProperties();
+            PropertyInfo[] properties = type.GetProperties();
             foreach (PropertyInfo propertyInfo in properties)
             {
                 string propertyName = propertyInfo.Name;
@@ -163,19 +158,9 @@ namespace Xinchen.DynamicObject
                 ilDirectSetMehotd.Emit(OpCodes.Ldarg_0);
                 ilDirectSetMehotd.Emit(OpCodes.Ldarg_1);
                 ilDirectSetMehotd.Emit(OpCodes.Stfld, fieldBuilder);
-                ilDirectSetMehotd.Emit(OpCodes.Ldarg_0);
-                ilDirectSetMehotd.Emit(OpCodes.Ldarg_1);
-                ilDirectSetMehotd.Emit(OpCodes.Callvirt, propertyInfo.GetSetMethod());
-                ilDirectSetMehotd.Emit(OpCodes.Nop);
                 //ilDirectSetMehotd.Emit(OpCodes.Ldarg_0);
                 //ilDirectSetMehotd.Emit(OpCodes.Ldarg_1);
-                //ilDirectSetMehotd.Emit(OpCodes.Stfld, fieldBuilder);
-                //ilDirectSetMehotd.Emit(OpCodes.Ldarg_0);
-                //ilDirectSetMehotd.Emit(OpCodes.Ldfld, fbModifiedPropertyNames);
-                //ilDirectSetMehotd.Emit(OpCodes.Ldstr, propertyInfo.Name);//给字典准备第一个参数
-                //ilDirectSetMehotd.Emit(OpCodes.Ldarg_1);//给字典准备第二个参数
-                //ilDirectSetMehotd.Emit(OpCodes.Callvirt,
-                //    ModifiedPropertyNamesType.GetMethod("Add", new Type[] { typeof(string), typeof(object) }));//加到字典
+                //ilDirectSetMehotd.Emit(OpCodes.Callvirt, propertyInfo.GetSetMethod());
                 //ilDirectSetMehotd.Emit(OpCodes.Nop);
                 ilDirectSetMehotd.Emit(OpCodes.Ret);
 
@@ -183,13 +168,28 @@ namespace Xinchen.DynamicObject
                 propertyBuilder.SetGetMethod(methodGet);
                 propertyBuilder.SetSetMethod(methodSet);
             }
-
+            var getValueMethodBuilder = typeBuilderProxy.DefineMethod("GetUpdatedValues", MethodAttributes.Assembly | MethodAttributes.Virtual, typeof(Dictionary<string, object>), Type.EmptyTypes);
+            var getValueIlGen = getValueMethodBuilder.GetILGenerator();
+            getValueIlGen.Emit(OpCodes.Ldarg_0);
+            getValueIlGen.Emit(OpCodes.Ldfld, fbModifiedPropertyNames);
+            getValueIlGen.Emit(OpCodes.Ret);
+            typeBuilderProxy.DefineMethodOverride(getValueMethodBuilder, typeof(IGetUpdatedValues).GetMethods().FirstOrDefault());
             //使用动态类创建类型
             Type proxyClassType = typeBuilderProxy.CreateType();
-            dynmicProxyList.Add(typeNeedProxy, proxyClassType);
+            dynmicProxyList.Add(type, proxyClassType);
             if (save)
                 assemblyBuilder.Save("test.dll");
             return proxyClassType;
+        }
+
+        /// <summary>
+        /// 创建动态代理类,重写属性Get Set 方法,并监控属性的Set方法,把变更的属性名加入到list集合中,需要监控的属性必须是virtual
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static Type CreateDynamicProxyType<T>()
+        {
+            return CreateDynamicProxyType(typeof(T));
         }
 
         /// <summary>
@@ -206,9 +206,61 @@ namespace Xinchen.DynamicObject
             return value as Dictionary<string, object>;
         }
 
-        public static T CreateDynamicProxy<T>(T entity)
+        public static object CreateDynamicProxy(object entity)
         {
-            Type proxyType = CreateDynamicProxyType<T>();
+            var type = entity.GetType();
+            Type proxyType = CreateDynamicProxyType(type);
+            return CreateDynamicProxy(entity, type, proxyType);
+            //IList<PropertyInfo> properties;
+
+            //if (proxyProperties.ContainsKey(proxyType))
+            //{
+            //    properties = proxyProperties[proxyType];
+            //}
+            //else
+            //{
+            //    properties = ExpressionReflector.GetProperties(proxyType).Values.ToList();
+            //    proxyProperties.Add(proxyType, properties);
+            //}
+
+            //var sourceGetters = ExpressionReflector.GetGetters(type);
+            //var proxyObject = ExpressionReflector.CreateInstance(proxyType);
+            //IDictionary<string, Action<object, object[]>> proxyPropertyDirectSets = null;
+            //if (!_propertyDirectSetCache.TryGetValue(proxyType, out proxyPropertyDirectSets))
+            //{
+            //    proxyPropertyDirectSets = new Dictionary<string, Action<object, object[]>>();
+            //    foreach (var propertyInfo in properties)
+            //    {
+            //        string name = propertyInfo.Name;
+            //        if (!sourceGetters.ContainsKey(name))
+            //        {
+            //            continue;
+            //        }
+            //        proxyPropertyDirectSets.Add(name, ExpressionReflector.GetMethodDelegate(proxyObject, "directSet_" + name, propertyInfo.PropertyType));
+
+            //    }
+            //}
+            //foreach (var propertyInfo in properties)
+            //{
+            //    string name = propertyInfo.Name;
+            //    if (!sourceGetters.ContainsKey(name))
+            //    {
+            //        continue;
+            //    }
+            //    var value = sourceGetters[name](entity);
+            //    Action<object, object[]> directSetter = null;
+            //    if (!proxyPropertyDirectSets.TryGetValue(name, out directSetter))
+            //    {
+            //        throw new Exception("未成功生成直接Set方法");
+            //    }
+            //    directSetter(proxyObject, new object[] { value });
+
+            //}
+            //return proxyObject;
+        }
+
+        static object CreateDynamicProxy(object entity, Type rawType, Type proxyType)
+        {
             IList<PropertyInfo> properties;
 
             if (proxyProperties.ContainsKey(proxyType))
@@ -220,11 +272,9 @@ namespace Xinchen.DynamicObject
                 properties = ExpressionReflector.GetProperties(proxyType).Values.ToList();
                 proxyProperties.Add(proxyType, properties);
             }
-            Type type = typeof(T);
 
-            var sourceGetters = new ExpressionReflector<T>().GetPropertyGetters();
-            var targetSetters = new ExpressionReflector<T>().GetPropertyGetters();
-            var proxyObject = Activator.CreateInstance(proxyType);
+            var sourceGetters = ExpressionReflector.GetGetters(rawType);// new ExpressionReflector<T>().GetPropertyGetters();
+            var proxyObject = ExpressionReflector.CreateInstance(proxyType);
             IDictionary<string, Action<object, object[]>> proxyPropertyDirectSets = null;
             if (!_propertyDirectSetCache.TryGetValue(proxyType, out proxyPropertyDirectSets))
             {
@@ -256,12 +306,67 @@ namespace Xinchen.DynamicObject
                 directSetter(proxyObject, new object[] { value });
 
             }
-            return (T)proxyObject;
+            return proxyObject;
+        }
+
+        public static T CreateDynamicProxy<T>(T entity)
+        {
+            var rawType = typeof(T);
+            Type proxyType = CreateDynamicProxyType(rawType);
+            return (T)CreateDynamicProxy(entity, rawType, proxyType);
+            //IList<PropertyInfo> properties;
+
+            //if (proxyProperties.ContainsKey(proxyType))
+            //{
+            //    properties = proxyProperties[proxyType];
+            //}
+            //else
+            //{
+            //    properties = ExpressionReflector.GetProperties(proxyType).Values.ToList();
+            //    proxyProperties.Add(proxyType, properties);
+            //}
+            //Type type = typeof(T);
+
+            //var sourceGetters = new ExpressionReflector<T>().GetPropertyGetters();
+            ////var targetSetters = new ExpressionReflector<T>().GetPropertyGetters();
+            //var proxyObject = ExpressionReflector.CreateInstance(proxyType);
+            //IDictionary<string, Action<object, object[]>> proxyPropertyDirectSets = null;
+            //if (!_propertyDirectSetCache.TryGetValue(proxyType, out proxyPropertyDirectSets))
+            //{
+            //    proxyPropertyDirectSets = new Dictionary<string, Action<object, object[]>>();
+            //    foreach (var propertyInfo in properties)
+            //    {
+            //        string name = propertyInfo.Name;
+            //        if (!sourceGetters.ContainsKey(name))
+            //        {
+            //            continue;
+            //        }
+            //        proxyPropertyDirectSets.Add(name, ExpressionReflector.GetMethodDelegate(proxyObject, "directSet_" + name, propertyInfo.PropertyType));
+
+            //    }
+            //}
+            //foreach (var propertyInfo in properties)
+            //{
+            //    string name = propertyInfo.Name;
+            //    if (!sourceGetters.ContainsKey(name))
+            //    {
+            //        continue;
+            //    }
+            //    var value = sourceGetters[name](entity);
+            //    Action<object, object[]> directSetter = null;
+            //    if (!proxyPropertyDirectSets.TryGetValue(name, out directSetter))
+            //    {
+            //        throw new Exception("未成功生成直接Set方法");
+            //    }
+            //    directSetter(proxyObject, new object[] { value });
+
+            //}
+            //return (T)proxyObject;
         }
 
         public static T CreateDynamicProxy<T>()
         {
-            return (T)Activator.CreateInstance(CreateDynamicProxyType<T>());
+            return (T)ExpressionReflector.CreateInstance(CreateDynamicProxyType<T>());
         }
 
         public static bool IsProxy(Type type)

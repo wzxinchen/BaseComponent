@@ -17,6 +17,6 @@ namespace PPD.XLinq.Provider
             return new SqlExecutor();
         }
 
-        internal abstract EntityAddBase CreateEntityAdder();
+        internal abstract EntityOperatorBase CreateEntityOperator();
     }
 }

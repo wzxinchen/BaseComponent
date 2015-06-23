@@ -30,7 +30,7 @@ namespace PPD.XLinq
             _typeMapper.Add(typeof(float), DbType.Single);
             _typeMapper.Add(typeof(float?), DbType.Single);
             _typeMapper.Add(typeof(bool), DbType.Boolean);
-            _factory = DbProviderFactories.GetFactory(DataContext.DbFactoryName);
+            _factory = DbProviderFactories.GetFactory(ConfigManager.DbFactoryName);
         }
 
         DbConnection CreateConnection()

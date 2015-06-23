@@ -37,10 +37,10 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
             }
             if (!autoIncreament)
             {
-                var obj = sqlExecutor.ExecuteScalar(string.Format("select max(Count) from {0} where Name='{1}'", DataContext.SequenceTable, table.Name), new Dictionary<string, object>());
+                var obj = sqlExecutor.ExecuteScalar(string.Format("select max(Count) from {0} where Name='{1}'", ConfigManager.SequenceTable, table.Name), new Dictionary<string, object>());
                 if (obj == DBNull.Value)
                 {
-                    sqlExecutor.ExecuteNonQuery(string.Format("insert into {0}(Name,Count) values('{1}',{2})", DataContext.SequenceTable, table.Name, 0), new Dictionary<string, object>());
+                    sqlExecutor.ExecuteNonQuery(string.Format("insert into {0}(Name,Count) values('{1}',{2})", ConfigManager.SequenceTable, table.Name, 0), new Dictionary<string, object>());
                 }
                 else
                 {
@@ -129,7 +129,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
             }
             if (!autoIncreament)
             {
-                sqlExecutor.ExecuteNonQuery(string.Format("update {0} set [Count]={1} where Name='{2}'", DataContext.SequenceTable, maxIndex, table.Name), new Dictionary<string, object>());
+                sqlExecutor.ExecuteNonQuery(string.Format("update {0} set [Count]={1} where Name='{2}'", ConfigManager.SequenceTable, maxIndex, table.Name), new Dictionary<string, object>());
             }
             return count;
         }

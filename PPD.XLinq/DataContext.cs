@@ -66,24 +66,11 @@ namespace PPD.XLinq
         //}
         static Type _dbSetType = typeof(DbSet<>);
         Type _dataContextType;
-        public static string DataBase
-        {
-            get;
-            private set;
-        }
-
-        public static string DbFactoryName
-        {
-            get;
-            private set;
-        }
         public static string ConnectionString
         {
             get;
             private set;
         }
-
-        public static string SequenceTable { get; private set; }
 
         public DbSet<T> Set<T>()
         {
@@ -112,16 +99,16 @@ namespace PPD.XLinq
 
         static DataContext()
         {
-            var pm = ConfigurationManager.GetSection("xlinq") as ProviderManager;
+            var pm = ConfigurationManager.GetSection("xlinq") as ConfigSection;
             if (pm == null || string.IsNullOrWhiteSpace(pm.DataBase))
             {
-                DataBase = "SqlServer2008R2";
-                DbFactoryName = "System.Data.SqlClient";
+                ConfigManager.DataBase = "SqlServer2008R2";
+                ConfigManager.DbFactoryName = "System.Data.SqlClient";
             }
             else if (SupportProviders.Contains(pm.DataBase))
             {
-                DataBase = pm.DataBase;
-                DbFactoryName = pm.DbFactoryName;
+                ConfigManager.DataBase = pm.DataBase;
+                ConfigManager.DbFactoryName = pm.DbFactoryName;
             }
             else
             {
@@ -129,12 +116,14 @@ namespace PPD.XLinq
             }
             if (pm != null)
             {
+                ConfigManager.ConnectionStringName = pm.ConnectionStringName;
+                ConfigManager.SequenceTable = pm.SequenceTable;
                 ConnectionString = ConfigurationManager.ConnectionStrings[pm.ConnectionStringName].ConnectionString;
-                SequenceTable = pm.SequenceTable;
+                ConfigManager.SqlBuilder = pm.SqlBuilder;
             }
-            if (string.IsNullOrWhiteSpace(SequenceTable))
+            if (string.IsNullOrWhiteSpace(ConfigManager.SequenceTable))
             {
-                SequenceTable = "Sequences";
+                ConfigManager.SequenceTable = "Sequences";
             }
         }
         #region 开始
@@ -177,7 +166,7 @@ namespace PPD.XLinq
             {
                 throw new Exception("初始有问题");
             }
-            var provider = ProviderFactory.CreateProvider(DataContext.DataBase);
+            var provider = ProviderFactory.CreateProvider(ConfigManager.DataBase);
             var count = 0;
             using (var scope = new TransactionScope())
             {

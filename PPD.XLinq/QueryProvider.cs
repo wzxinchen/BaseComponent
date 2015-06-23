@@ -44,7 +44,7 @@ namespace PPD.XLinq
 
         public TResult Execute<TResult>(System.Linq.Expressions.Expression expression)
         {
-            var provider = ProviderFactory.CreateProvider(DataContext.DataBase);
+            var provider = ProviderFactory.CreateProvider(ConfigManager.DataBase);
             var parser = provider.CreateParser();
             parser.ElementType = _elementType;
             parser.Parse(expression);
@@ -62,6 +62,7 @@ namespace PPD.XLinq
                         r = ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0;
                         return (TResult)r;
                     case "Delete":
+                    case "Update":
                         r = executor.ExecuteNonQuery(parser.Result.CommandText, parser.Result.Parameters);
                         return (TResult)r;
                     case "Average":

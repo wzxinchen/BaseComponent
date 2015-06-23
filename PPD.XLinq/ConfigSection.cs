@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PPD.XLinq.Provider
+namespace PPD.XLinq
 {
-    public class ProviderManager : ConfigurationSection
+    public class ConfigSection : ConfigurationSection
     {
         [ConfigurationProperty("dataBase")]
         public string DataBase
@@ -52,6 +52,19 @@ namespace PPD.XLinq.Provider
             set
             {
                 base["sequenceTable"] = value;
+            }
+        }
+
+        [ConfigurationProperty("sqlBuilder")]
+        public string SqlBuilder
+        {
+            get
+            {
+                return (string)base["sqlBuilder"];
+            }
+            set
+            {
+                base["sqlBuilder"] = value;
             }
         }
     }

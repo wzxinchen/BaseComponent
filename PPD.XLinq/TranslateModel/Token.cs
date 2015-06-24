@@ -23,6 +23,10 @@ namespace PPD.XLinq.TranslateModel
         }
         public static Token Create(object obj)
         {
+            if(obj is Token || obj is Column || obj is Condition)
+            {
+                throw new Exception();
+            }
             return new Token()
             {
                 Object = obj,

@@ -99,7 +99,8 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                 #region 使用SqlBulkCopy插入
                 var sqlBulkCopy = new SqlBulkCopy(DataContext.ConnectionString);
                 sqlBulkCopy.DestinationTableName = "dbo.[" + table.Name + "]";
-                sqlBulkCopy.BatchSize = list.Count / 10;
+                if (list.Count > 500000)
+                    sqlBulkCopy.BatchSize = list.Count / 10;
                 var dataTable = new DataTable();
                 foreach (var column in table.Columns.Values)
                 {

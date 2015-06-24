@@ -40,7 +40,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
 
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
-            var results = new Dictionary<string,object>();
+            var results = new Dictionary<string, object>();
             foreach (MemberAssignment binding in node.Bindings)
             {
                 var visitor = new MemberExpressionVisitor(Context);
@@ -49,7 +49,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                 {
                     throw new NotSupportedException("不支持");
                 }
-                results.Add(binding.Member.Name,visitor.Token.Object);
+                results.Add(binding.Member.Name, visitor.Token.Object);
             }
             Token = Token.Create(results);
             return node;
@@ -310,10 +310,20 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     tableInfo = GetTable(table.Type);
                 }
                 var columnType = ((PropertyInfo)columnMember).PropertyType;
+                var columnName = string.Empty;
+                var columnSechma = tableInfo.Columns.Get(columnMember.Name);
+                if (columnSechma != null)
+                {
+                    columnName = columnSechma.Name;
+                }
+                else
+                {
+                    columnName = Context.Columns.Get(columnMember.Name).Name;
+                }
                 column = new Column()
                 {
                     DataType = columnType,
-                    Name = tableInfo.Columns.Get(columnMember.Name).Name,
+                    Name = columnName,
                     Table = table,
                     MemberInfo = columnMember
                 };

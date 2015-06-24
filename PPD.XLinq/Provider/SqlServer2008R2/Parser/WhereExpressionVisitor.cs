@@ -389,6 +389,8 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                         return CompareType.Multiply;
                     case ExpressionType.Divide:
                         return CompareType.Divide;
+                    case ExpressionType.NotEqual:
+                        return CompareType.NotEqual;
                     default:
                         throw new Exception();
                 }
@@ -530,16 +532,23 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     }
                     else if (rightResult.Type == TokenType.Condition)
                     {
-                        var right = (Condition)rightResult.Condition;
                         var condition = new Condition();
                         condition.Left = Token.Create(left);
-                        condition.Right = Token.Create(right);
+                        condition.Right = rightResult;
+                        condition.CompareType = SelectLogicCompareType(node.NodeType);
+                        return Token.Create(condition);
+                    }
+                    else if (rightResult.Type == TokenType.Column)
+                    {
+                        var condition = new Condition();
+                        condition.Left = Token.Create(left);
+                        condition.Right = rightResult;
                         condition.CompareType = SelectLogicCompareType(node.NodeType);
                         return Token.Create(condition);
                     }
                     else
                     {
-                        var leftToken = leftResult as Token;
+                        var leftToken = (Token)leftResult;
                         var rightToken = Token.Create(rightResult);
                         var condition = new Condition();
                         condition.Left = leftToken;

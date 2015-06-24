@@ -94,6 +94,8 @@ namespace PPD.XLinq.Provider
                     return "*";
                 case CompareType.Divide:
                     return "/";
+                case CompareType.NotEqual:
+                    return "<>";
                 default:
                     throw new Exception();
             }

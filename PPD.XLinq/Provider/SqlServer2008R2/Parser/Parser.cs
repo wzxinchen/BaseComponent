@@ -13,7 +13,6 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
     {
         SqlExpressionParser parser = new SqlExpressionParser();
         Expression _expression;
-        private string tableName;
         public override void Parse(System.Linq.Expressions.Expression expression)
         {
             _expression = expression;

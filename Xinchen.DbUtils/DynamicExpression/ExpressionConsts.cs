@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Xinchen.Utils.DynamicExpression
+namespace Xinchen.DbUtils.DynamicExpression
 {
     public class ExpressionConsts
     {
@@ -18,5 +18,10 @@ namespace Xinchen.Utils.DynamicExpression
 
         public static readonly Type Int32Type = typeof(Int32);
         public static readonly Type NullableType = typeof(Nullable<>);
+        public static readonly Type StringType = typeof(string);
+
+        public static readonly Type DateTimeType = typeof(DateTime);
+        public static readonly Type DateTimeNullableType = typeof(DateTime?);
+        public static readonly Type TimeSpanType = typeof(TimeSpan);
     }
 }

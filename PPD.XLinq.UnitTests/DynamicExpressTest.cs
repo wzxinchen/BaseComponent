@@ -2,12 +2,12 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PPD.XLinq.UnitTests.Model;
 using System.Collections.Generic;
-using Xinchen.Utils.DynamicExpression;
 using System.Linq;
 using System.Linq.Expressions;
 using Xinchen.DbUtils;
 using System.Collections;
 using System.Reflection;
+using Xinchen.DbUtils.DynamicExpression;
 namespace PPD.XLinq.UnitTests
 {
     [TestClass]

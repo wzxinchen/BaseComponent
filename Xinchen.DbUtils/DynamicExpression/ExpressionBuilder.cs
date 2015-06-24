@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xinchen.DbUtils;
 
-namespace Xinchen.Utils.DynamicExpression
+namespace Xinchen.DbUtils.DynamicExpression
 {
     public class ExpressionBuilder<TParameter>
     {

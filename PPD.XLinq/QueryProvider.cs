@@ -1,4 +1,5 @@
 ﻿using PPD.XLinq.Provider;
+using PPD.XLinq.Provider.Parser;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -44,8 +45,10 @@ namespace PPD.XLinq
 
         public TResult Execute<TResult>(System.Linq.Expressions.Expression expression)
         {
-            var provider = ProviderFactory.CreateProvider(ConfigManager.DataBase);
+            var provider = ProviderFactory.CreateProvider(ConfigManager.DataBaseType);
             var parser = provider.CreateParser();
+            //var provider = ProviderFactory.CreateProvider(ConfigManager.DataBase);
+            //var parser = provider.CreateParser();
             parser.ElementType = _elementType;
             parser.Parse(expression);
             Type type = typeof(TResult);

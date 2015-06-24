@@ -29,37 +29,6 @@ namespace PPD.XLinq
         }
 
         /// <summary>
-        /// 将给定的表结构信息转换成完整表名
-        /// </summary>
-        /// <param name="table"></param>
-        /// <returns></returns>
-        public static string GetTableName(Table table)
-        {
-            var tableName = string.Empty;
-            if (!string.IsNullOrWhiteSpace(table.DataBase))
-            {
-                tableName = string.Format("[{0}].dbo.", table.DataBase);
-            }
-            tableName = string.Format("{0}[{1}]", tableName, table.Name);
-            return tableName;
-        }
-        /// <summary>
-        /// 将给定的表结构信息转换成完整表名
-        /// </summary>
-        /// <param name="table"></param>
-        /// <returns></returns>
-        public static string GetTableName(TranslateModel.Table table)
-        {
-            var tableName = string.Empty;
-            if (!string.IsNullOrWhiteSpace(table.DataBase))
-            {
-                tableName = string.Format("[{0}].dbo.", table.DataBase);
-            }
-            tableName = string.Format("{0}[{1}]", tableName, table.Name);
-            return tableName;
-        }
-
-        /// <summary>
         /// 根据给定的类型分析表名、数据库名
         /// </summary>
         /// <param name="entityType"></param>

@@ -57,8 +57,6 @@
     <Compile Include="DataAnnotations\PrivilegeDescription.cs" />
     <Compile Include="DataAnnotations\TableAttribute.cs" />
     <Compile Include="DictionaryExtension.cs" />
-    <Compile Include="DynamicExpression\ExpressionBuilder.cs" />
-    <Compile Include="DynamicExpression\ExpressionConsts.cs" />
     <Compile Include="EmailHelper.cs" />
     <Compile Include="Entity\EntityResult.cs" />
     <Compile Include="EnumHelper.cs" />
@@ -76,12 +74,6 @@
     <Compile Include="WinApi\Shell.cs" />
     <Compile Include="WinApi\User.cs" />
     <Compile Include="WinApi\Win32.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Xinchen.DbUtils\Xinchen.DbUtils.csproj">
-      <Project>{12c3be5a-0ca9-4429-a14d-e86404f0457b}</Project>
-      <Name>Xinchen.DbUtils</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

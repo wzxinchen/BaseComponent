@@ -75,6 +75,10 @@ namespace PPD.XLinq
         {
             foreach (T item in list)
             {
+                if (item == null)
+                {
+                    throw new ArgumentNullException("item");
+                }
                 _entitiesToEdit.Add(item);
             }
         }
@@ -103,6 +107,10 @@ namespace PPD.XLinq
 
         public void Remove(T item)
         {
+            if (item == null)
+            {
+                throw new ArgumentNullException("item");
+            }
             if (_entitiesToRemove.Contains(item))
             {
                 return;

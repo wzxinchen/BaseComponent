@@ -21,7 +21,7 @@ namespace PPD.XLinq.UnitTests
             }
         }
         [TestMethod]
-        public void TestMethod1()
+        public void WhereToList()
         {
             var list = db.Set<User>().Where(x => x.Password == "06ea391fdd9abd6ac43cc858dcc7c4ce" && x.Username == "awfer1").ToList();
 
@@ -65,7 +65,6 @@ namespace PPD.XLinq.UnitTests
         public void Select中取Date()
         {
             var query = (from user in db.Set<User>()
-                         where user.Password == "xxxx" && user.Id == 1
                          select new
                          {
                              Id = user.Id,
@@ -79,16 +78,28 @@ namespace PPD.XLinq.UnitTests
         public void Where方法调用()
         {
             var query = from user in db.Set<User>()
-                        where (user.Password.Substring(0, 1) == "aaaa" ||
-                        user.LastLoginDate.Value.Date == Convert.ToDateTime(DateTime.Now.ToString()).Date.Date &&
-                        user.Password == "xxxx") && user.Id == 1
+                        where (user.Username.Substring(1) == "bcde")
                         select new
                         {
                             Id = user.Id,
                             user.Password,
                             user.LastLoginDate.Value.Date
                         };
-            query.ToList();
+            Console.WriteLine(query.ToList().Count);
+        }
+
+        [TestMethod]
+        public void Where方法调用2()
+        {
+            var query = from user in db.Set<User>()
+                        where (user.Username.Substring(1, 1) == "b")
+                        select new
+                        {
+                            Id = user.Id,
+                            user.Password,
+                            user.LastLoginDate.Value.Date
+                        };
+            Console.WriteLine(query.ToList().Count);
         }
         [TestMethod]
         public void Where方法调用1()
@@ -633,8 +644,8 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void ColumnDateDiffObject()
         {
-            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalDays + DateTime.Now.Day > 5 select user;
-            query.Average(x => x.Id);
+            var query = from user in db.Set<User>() where (DateTime.Now - user.LastLoginDate.Value).TotalDays <= 1 select user;
+            Console.WriteLine(query.Count());
         }
         [TestMethod]
         public void ColumnDateDiffHourObject()

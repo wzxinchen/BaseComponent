@@ -92,8 +92,9 @@ namespace PPD.XLinq
             }
             return (DbSet<T>)property;
         }
-        public readonly static List<string> SupportProviders = new List<string>(){
-            "SqlServer2008R2"
+        public readonly static Dictionary<string, string> SupportProviders = new Dictionary<string, string>(){
+            {"SqlServer2008R2","System.Data.SqlClient"},
+            {"SQLite","System.Data.SQLite"}
         };
         private string _connectionStringName;
 
@@ -105,7 +106,7 @@ namespace PPD.XLinq
                 ConfigManager.DataBase = "SqlServer2008R2";
                 ConfigManager.DbFactoryName = "System.Data.SqlClient";
             }
-            else if (SupportProviders.Contains(pm.DataBase))
+            else if (SupportProviders.ContainsKey(pm.DataBase))
             {
                 ConfigManager.DataBase = pm.DataBase;
                 ConfigManager.DbFactoryName = pm.DbFactoryName;
@@ -125,13 +126,20 @@ namespace PPD.XLinq
             {
                 ConfigManager.SequenceTable = "Sequences";
             }
+            if (string.IsNullOrWhiteSpace(ConfigManager.DbFactoryName))
+            {
+                ConfigManager.DbFactoryName = SupportProviders.Get(ConfigManager.DataBase);
+            }
         }
         #region 开始
         public DataContext(string name)
         {
-            _connectionStringName = name;
             _dataContextType = GetType();
-            ConnectionString = ConfigurationManager.ConnectionStrings[_connectionStringName].ConnectionString;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                _connectionStringName = name;
+                ConnectionString = ConfigurationManager.ConnectionStrings[_connectionStringName].ConnectionString;
+            }
             Dictionary<string, PropertyInfo> dbSetProperties;
             if (!_dbSetProperties.TryGetValue(_dataContextType, out dbSetProperties))
             {
@@ -166,7 +174,7 @@ namespace PPD.XLinq
             {
                 throw new Exception("初始有问题");
             }
-            var provider = ProviderFactory.CreateProvider(ConfigManager.DataBase);
+            var provider = ProviderFactory.CreateProvider(ConfigManager.DataBaseType);
             var count = 0;
             using (var scope = new TransactionScope())
             {

@@ -13,7 +13,7 @@ namespace PPD.XLinq.UnitTests
         public void InsertBigData()
         {
             var dbUser = db.Set<User>();
-            for (int i = 0; i < 500000; i++)
+            for (int i = 0; i < 200000; i++)
             {
                 dbUser.Add(new User()
                 {
@@ -257,12 +257,12 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void QueryUpdateMultiEntity()
         {
-            var user = db.QueryEnableProxy(() => db.Set<User>().FirstOrDefault(x => x.Id == 1));
+            var user = db.QueryEnableProxy(() => db.Set<User>().FirstOrDefault(x => x.Id == 17));
             user.IsEnabled = false;
             user.LastLoginDate = DateTime.Now.Date;
             user.Password = "password1";
             user.Username = "username1";
-            user = db.QueryEnableProxy(() => db.Set<User>().FirstOrDefault(x => x.Id == 2));
+            user = db.QueryEnableProxy(() => db.Set<User>().FirstOrDefault(x => x.Id == 18));
             user.Password = "password2";
             user.Username = "username2";
             db.SaveChanges();
@@ -270,9 +270,9 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void QueryDelete()
         {
-            var user = db.Set<User>().FirstOrDefault(x => x.Id == 3);
+            var user = db.Set<User>().FirstOrDefault(x => x.Id == 11);
             db.Set<User>().Remove(user);
-            user = db.Set<User>().FirstOrDefault(x => x.Id == 4);
+            user = db.Set<User>().FirstOrDefault(x => x.Id == 12);
             db.Set<User>().Remove(user);
             db.SaveChanges();
         }

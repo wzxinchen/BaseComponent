@@ -8,7 +8,7 @@ namespace PPD.XLinq.UnitTests.Model
     public class TestDataContext : DataContext
     {
         public TestDataContext()
-            : base("test")
+            : base(null)
         {
 
         }

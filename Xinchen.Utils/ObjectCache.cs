@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -27,6 +28,28 @@ namespace Xinchen.Utils
                 Instance = createInstanceAction();
             }
             return Instance;
+        }
+
+        public static object GetObjectFromCallContext(Type type)
+        {
+            object instance = CallContext.GetData(type.FullName);
+            if (instance == null)
+            {
+                instance = Activator.CreateInstance(type);
+                CallContext.SetData(type.FullName, instance);
+            }
+            return instance;
+        }
+
+        public static object GetObjectFromCallContext(Type type, Func<Type, object> createInstance)
+        {
+            object instance = CallContext.GetData(type.FullName);
+            if (instance == null)
+            {
+                instance = createInstance(type);// Activator.CreateInstance(type);
+                CallContext.SetData(type.FullName, instance);
+            }
+            return instance;
         }
         static TObject Instance { get; set; }
     }

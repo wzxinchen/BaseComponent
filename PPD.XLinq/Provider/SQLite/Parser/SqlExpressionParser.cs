@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
+namespace PPD.XLinq.Provider.SQLite.Parser
 {
     internal class SqlExpressionParser : ExpressionVisitor
     {
@@ -15,9 +15,13 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         /// </summary>
         /// <param name="table"></param>
         /// <returns></returns>
-        public static string GetTableName(SchemaModel.Table table)
+        public static string GetTableName(PPD.XLinq.SchemaModel.Table table)
         {
             var tableName = string.Empty;
+            if (!string.IsNullOrWhiteSpace(table.DataBase))
+            {
+                tableName = string.Format("[{0}].dbo.", table.DataBase);
+            }
             tableName = string.Format("{0}[{1}]", tableName, table.Name);
             return tableName;
         }
@@ -29,6 +33,10 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         public static string GetTableName(TranslateModel.Table table)
         {
             var tableName = string.Empty;
+            if (!string.IsNullOrWhiteSpace(table.DataBase))
+            {
+                tableName = string.Format("[{0}].dbo.", table.DataBase);
+            }
             tableName = string.Format("{0}[{1}]", tableName, table.Name);
             return tableName;
         }

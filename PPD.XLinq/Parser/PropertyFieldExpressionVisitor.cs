@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.Utils;
-namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
+namespace PPD.XLinq.Provider.Parser
 {
     /// <summary>
     /// 对访问成员属性的表达式进行分析
@@ -64,7 +64,20 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             {
                 Token = visitor.Token;
                 var column = Token.Column;
-                column.Converter = GetConverter(column.Converter);
+                while (_memberInfos.Count > 0)
+                {
+                    var exp = _memberInfos.Pop();
+                    switch (exp.NodeType)
+                    {
+                        case ExpressionType.MemberAccess:
+                            var memberInfo = ((MemberExpression)exp).Member;
+                            column.Converters.Push(new ColumnConverter(memberInfo, new List<object>()));
+                            break;
+                        default:
+                            throw new Exception();
+                    }
+                }
+                //column.Converter = GetConverter(column.Converter);
             }
             else if (type == TokenType.Condition)
             {
@@ -115,27 +128,27 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
             }
             if (node.Member.DeclaringType == typeof(TimeSpan))
             {
-                var unit = string.Empty;
-                switch (node.Member.Name)
-                {
-                    case "TotalDays":
-                        unit = "DAY";
-                        break;
-                    case "TotalHours":
-                        unit = "HOUR";
-                        break;
-                    case "TotalMilliseconds":
-                        unit = "MILLISECOND";
-                        break;
-                    case "TotalMinutes":
-                        unit = "MINUTE";
-                        break;
-                    case "TotalSeconds":
-                        unit = "SECOND";
-                        break;
-                    default:
-                        throw new Exception();
-                }
+                //var unit = string.Empty;
+                //switch (node.Member.Name)
+                //{
+                //    case "TotalDays":
+                //        unit = "DAY";
+                //        break;
+                //    case "TotalHours":
+                //        unit = "HOUR";
+                //        break;
+                //    case "TotalMilliseconds":
+                //        unit = "MILLISECOND";
+                //        break;
+                //    case "TotalMinutes":
+                //        unit = "MINUTE";
+                //        break;
+                //    case "TotalSeconds":
+                //        unit = "SECOND";
+                //        break;
+                //    default:
+                //        throw new Exception();
+                //}
                 if (node.Expression.NodeType == ExpressionType.Subtract)
                 {
                     var binaryExp = (BinaryExpression)node.Expression;
@@ -148,9 +161,19 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     if (leftVisitor.Token.Type == TokenType.Column && rightVisitor.Token.Type == TokenType.Object)
                     {
                         var rightObject = (DateTime)rightVisitor.Token.Object;
-                        leftVisitor.Token.Column.Converter = "DATEDIFF(" + unit + ",@param1,{0})";
-                        leftVisitor.Token.Column.ConverterParameters.Add(rightObject);
+                        //leftVisitor.Token.Column.Converter = "DATEDIFF(" + unit + ",@param1,{0})";
+                        //leftVisitor.Token.Column.ConverterParameters.Add(rightObject);
                         Token = leftVisitor.Token;
+                        Token.Column.Converters.Push(new ColumnConverter(node.Member, new List<object>() { rightObject }, true));
+                        //Token.Column.Converters.Push(node.Member);
+                    }
+                    else if (leftVisitor.Token.Type == TokenType.Object && rightVisitor.Token.Type == TokenType.Column)
+                    {
+                        var leftObject = (DateTime)leftVisitor.Token.Object;
+                        //leftVisitor.Token.Column.Converter = "DATEDIFF(" + unit + ",@param1,{0})";
+                        //leftVisitor.Token.Column.ConverterParameters.Add(rightObject);
+                        Token = rightVisitor.Token;
+                        Token.Column.Converters.Push(new ColumnConverter(node.Member, new List<object>() { leftObject }, false));
                     }
                     else
                     {
@@ -276,7 +299,20 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     tableAlias = table.Name;
                 }
                 column.Table = CreateTable(tableAlias, table.DataBase, table.Name, table.Type);
-                column.Converter = GetConverter(null);
+                while (_memberInfos.Count > 0)
+                {
+                    var exp = _memberInfos.Pop();
+                    switch (exp.NodeType)
+                    {
+                        case ExpressionType.MemberAccess:
+                            var memberInfo = ((MemberExpression)exp).Member;
+                            column.Converters.Push(new ColumnConverter(memberInfo, new List<object>()));
+                            break;
+                        default:
+                            throw new Exception();
+                    }
+                }
+                //column.Converter = GetConverter(null);
             }
             else
             {
@@ -327,7 +363,20 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
                     Table = table,
                     MemberInfo = columnMember
                 };
-                column.Converter = GetConverter(null);
+                while (_memberInfos.Count > 0)
+                {
+                    var exp = _memberInfos.Pop();
+                    switch (exp.NodeType)
+                    {
+                        case ExpressionType.MemberAccess:
+                            var memberInfo = ((MemberExpression)exp).Member;
+                            column.Converters.Push(new ColumnConverter(memberInfo, new List<object>()));
+                            break;
+                        default:
+                            throw new Exception();
+                    }
+                }
+                //column.Converter = GetConverter(null);
             }
             Token = Token.Create(column);
             return node;

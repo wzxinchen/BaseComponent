@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xinchen.DynamicObject;
 using Xinchen.Utils;
-namespace PPD.XLinq.Provider.SqlServer2008R2
+namespace PPD.XLinq.Provider.SQLite
 {
     internal class EntityOperator : EntityOperatorBase
     {

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PPD.XLinq.Provider.SqlServer2008R2
+namespace PPD.XLinq.Provider
 {
     internal abstract class EntityOperatorBase
     {

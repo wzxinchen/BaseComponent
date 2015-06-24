@@ -2,13 +2,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Xinchen.DbUtils.DynamicExpression;
 using Xinchen.Utils;
-namespace PPD.XLinq.Provider
+namespace PPD.XLinq.Provider.SqlServer2008R2
 {
-    public class SqlBuilder:SqlBuilderBase
+    public class SqlBuilder : SqlBuilderBase
     {
         private ParseResult _result;
         private BuilderContext _context;
@@ -94,6 +96,8 @@ namespace PPD.XLinq.Provider
                     return "*";
                 case CompareType.Divide:
                     return "/";
+                case CompareType.NotEqual:
+                    return "<>";
                 default:
                     throw new Exception();
             }
@@ -165,15 +169,11 @@ namespace PPD.XLinq.Provider
             //{
             //    col = string.Format("[{0}].dbo.[{1}].[{2}]", column.Table.DataBase, GetTableAlias(column.Name), column.Name);
             //}
-            if (!string.IsNullOrWhiteSpace(column.Converter))
+            var convert = string.Empty;
+            if (column.Converters.Any())
             {
-                col = string.Format(column.Converter, col);
-                var matches = Regex.Matches(col, @"@param\d+");
-                for (int i = 0; i < matches.Count; i++)
-                {
-                    var match = matches[i];
-                    _result.Parameters.Add(match.Value, column.ConverterParameters[i]);
-                }
+                convert = ParserConverter(column);
+                col = string.Format(convert, col);
             }
             return col;
         }
@@ -182,9 +182,10 @@ namespace PPD.XLinq.Provider
         {
             var tblAlias = GetTableAlias(column.Name);
             string col = string.Format("[{0}].[{1}]", tblAlias, column.Name);
-            if (!string.IsNullOrWhiteSpace(column.Converter))
+            var converter = ParserConverter(column);
+            if (!string.IsNullOrWhiteSpace(converter))
             {
-                col = string.Format(column.Converter, string.Format("[{0}].[{1}]", tblAlias, column.Name));
+                col = string.Format(converter, string.Format("[{0}].[{1}]", tblAlias, column.Name));
             }
             if (!genColumnAlias)
             {
@@ -246,9 +247,10 @@ namespace PPD.XLinq.Provider
                 foreach (var sortColumn in _context.SortColumns)
                 {
                     var col = string.Format("[{0}].[{1}]", GetTableAlias(sortColumn.Value.Name), sortColumn.Value.Alias ?? sortColumn.Value.Name);
-                    if (!string.IsNullOrWhiteSpace(sortColumn.Value.Converter))
+                    var converter = ParserConverter(sortColumn.Value);
+                    if (!string.IsNullOrWhiteSpace(converter))
                     {
-                        col = string.Format(sortColumn.Value.Converter, col);
+                        col = string.Format(converter, col);
                     }
                     sorts.Add(col);
                 }
@@ -305,12 +307,7 @@ namespace PPD.XLinq.Provider
                 var firstJoin = joins.Values.FirstOrDefault();
                 var leftColumn = firstJoin.Left;
                 var leftTable = leftColumn.Table;
-                fromBuilder.Append(TableInfoManager.GetTableName(leftTable));
-                //if (!string.IsNullOrWhiteSpace(leftTable.DataBase))
-                //{
-                //    fromBuilder.AppendFormat("[{0}].dbo.", leftTable.DataBase);
-                //}
-                //fromBuilder.AppendFormat("[{0}] ", leftTable.Name);
+                fromBuilder.Append(GetTableName(leftTable));
                 fromBuilder.AppendFormat(" [{0}]", leftTable.Alias);
                 if (_context.NoLockTables.Contains(leftTable.Name))
                 {
@@ -319,12 +316,7 @@ namespace PPD.XLinq.Provider
                 fromBuilder.Append(GenJoinType(firstJoin.JoinType));
                 var rightColumn = firstJoin.Right;
                 var rightTable = rightColumn.Table;
-                fromBuilder.Append(TableInfoManager.GetTableName(rightTable));
-                //if (!string.IsNullOrWhiteSpace(rightTable.DataBase))
-                //{
-                //    fromBuilder.AppendFormat("[{0}].dbo.", rightTable.DataBase);
-                //}
-                //fromBuilder.AppendFormat("[{0}] ", rightTable.Name);
+                fromBuilder.Append(GetTableName(rightTable));
                 fromBuilder.AppendFormat(" [{0}]", rightTable.Alias);
                 if (_context.NoLockTables.Contains(rightTable.Name))
                 {
@@ -342,12 +334,7 @@ namespace PPD.XLinq.Provider
                     fromBuilder.Append(GenJoinType(join.JoinType));
                     rightColumn = join.Right;
                     rightTable = rightColumn.Table;
-                    fromBuilder.Append(TableInfoManager.GetTableName(rightTable));
-                    //if (!string.IsNullOrWhiteSpace(rightTable.DataBase))
-                    //{
-                    //    fromBuilder.AppendFormat("[{0}].dbo.", rightTable.DataBase);
-                    //}
-                    //fromBuilder.AppendFormat("[{0}] ", rightTable.Name);
+                    fromBuilder.Append(GetTableName(rightTable));
                     fromBuilder.AppendFormat(" [{0}]", rightTable.Alias);
                     if (_context.NoLockTables.Contains(rightTable.Name))
                     {
@@ -378,11 +365,7 @@ namespace PPD.XLinq.Provider
             {
                 fromBuilder = new StringBuilder("FROM ");
                 var table = columns.FirstOrDefault().Table;
-                fromBuilder.Append(TableInfoManager.GetTableName(table));
-                //if (!string.IsNullOrWhiteSpace(table.DataBase))
-                //{
-                //    fromBuilder.AppendFormat("[{0}].dbo.", table.DataBase);
-                //}
+                fromBuilder.Append(GetTableName(table));
                 tableName = ParserUtils.GenerateAlias(table.Name);
                 fromBuilder.AppendFormat(" [{0}]", tableName);
                 if (_context.NoLockTables.Contains(table.Name))
@@ -421,12 +404,23 @@ namespace PPD.XLinq.Provider
             _result.CommandText = sql;
         }
 
+        public override string GetTableName(Table table)
+        {
+            var tableName = string.Empty;
+            if (!string.IsNullOrWhiteSpace(table.DataBase))
+            {
+                tableName = string.Format("[{0}].DBO.", table.DataBase);
+            }
+            tableName = string.Format("{0}[{1}]", tableName, table.Name);
+            return tableName;
+        }
+
         void BuildDeleteSql()
         {
             var where = string.Empty;
             var table = TableInfoManager.GetTable(_context.ElementType);
             tableName = table.Name;
-            var tableFullName = TableInfoManager.GetTableName(table);
+            var tableFullName = GetTableName(table);
             if (_context.Conditions.Any())
             {
                 where = BuildWhere(_context.Conditions);
@@ -447,7 +441,7 @@ namespace PPD.XLinq.Provider
                 keyColumnName = keyColumn.PropertyInfo.Name;
             }
             tableName = table.Name;
-            var tableFullName = TableInfoManager.GetTableName(table);
+            var tableFullName = GetTableName(table);
             if (_context.Conditions.Any())
             {
                 where = BuildWhere(_context.Conditions);
@@ -489,6 +483,193 @@ namespace PPD.XLinq.Provider
                     throw new Exception();
             }
             return _result;
+        }
+
+        public override string GetTableName(SchemaModel.Table table)
+        {
+            var tableName = string.Empty;
+            if (!string.IsNullOrWhiteSpace(table.DataBase))
+            {
+                tableName = string.Format("[{0}].DBO.", table.DataBase);
+            }
+            tableName = string.Format("{0}[{1}]", tableName, table.Name);
+            return tableName;
+        }
+
+        string FormatConverter(bool isColumnCaller, string rawConverter, string converter, string param)
+        {
+            if (isColumnCaller)
+            {
+                converter = string.Format(rawConverter, string.Format(converter, param, "{0}"));
+            }
+            else
+            {
+                converter = string.Format(rawConverter, string.Format(converter, "{0}", param));
+            }
+            return converter;
+        }
+
+        public override string ParserConverter(Column column)
+        {
+            var converter = string.Empty;
+            if (column.Converters.Any())
+            {
+                converter = "{0}";
+            }
+            while (column.Converters.Count > 0)
+            {
+                var columnConverter = column.Converters.Pop();
+                var memberInfo = columnConverter.MemberInfo;
+                var args = columnConverter.Parameters;
+                var paramName = "@" + ParserUtils.GenerateAlias("param");
+                switch (memberInfo.MemberType)
+                {
+                    case MemberTypes.Property:
+                        if (ExpressionConsts.NullableType.IsAssignableFrom(memberInfo.DeclaringType) && memberInfo.Name == "Value")
+                        {
+                            continue;
+                        }
+                        if (memberInfo.DeclaringType == ExpressionConsts.DateTimeNullableType || memberInfo.DeclaringType == ExpressionConsts.DateTimeType)
+                        {
+                            converter = string.Format(converter, "CONVERT(DATE,{0},211)");
+                            continue;
+                        }
+                        else if (memberInfo.DeclaringType == ExpressionConsts.TimeSpanType)
+                        {
+                            var unit = string.Empty;
+                            switch (memberInfo.Name)
+                            {
+                                case "TotalDays":
+                                    unit = "DAY";
+                                    break;
+                                case "TotalHours":
+                                    unit = "HOUR";
+                                    break;
+                                case "TotalMilliseconds":
+                                    unit = "MILLISECOND";
+                                    break;
+                                case "TotalMinutes":
+                                    unit = "MINUTE";
+                                    break;
+                                case "TotalSeconds":
+                                    unit = "SECOND";
+                                    break;
+                                default:
+                                    throw new Exception();
+                            }
+                            converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEDIFF(" + unit + ",{1},{0})", paramName);
+                            _result.Parameters.Add(paramName, args[0]);
+                            continue;
+                        }
+                        throw new Exception("不支持");
+                    case MemberTypes.Method:
+                        if (memberInfo.DeclaringType == ExpressionConsts.StringType)
+                        {
+                            switch (memberInfo.Name)
+                            {
+                                case "Contains":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "CHARINDEX({0},{1})>0", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                case "StartsWith":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "CHARINDEX({0},{1})=1", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                case "Substring":
+                                    if (columnConverter.Parameters.Count == 1)
+                                    {
+                                        if (columnConverter.IsInstanceColumn)
+                                        {
+                                            converter = string.Format(converter, "SUBSTRING({0}," + (Convert.ToInt32(columnConverter.Parameters[0]) + 1) + ",LEN({0})+1-" + columnConverter.Parameters[0] + ")");
+                                        }
+                                        else
+                                        {
+                                            throw new Exception("不支持");
+                                        }
+                                    }
+                                    else if (columnConverter.Parameters.Count == 2)
+                                    {
+                                        if (columnConverter.IsInstanceColumn)
+                                        {
+                                            converter = string.Format(converter, "SUBSTRING({0}," + (Convert.ToInt32(columnConverter.Parameters[0]) + 1) + "," + columnConverter.Parameters[1] + ")");
+                                        }
+                                        else
+                                        {
+                                            throw new Exception("不支持");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        throw new Exception("不支持");
+                                    }
+                                    break;
+                                default:
+                                    throw new Exception("不支持");
+                            }
+                            continue;
+                        }
+                        else if (memberInfo.DeclaringType == ExpressionConsts.DateTimeType || memberInfo.DeclaringType == ExpressionConsts.DateTimeNullableType)
+                        {
+                            switch (memberInfo.Name)
+                            {
+                                case "AddDays":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(DAY,{0},{1})", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                case "AddHours":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(HOUR,{0},{1})", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                case "AddYears":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(YEAR,{0},{1})", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                case "AddMonths":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MONTH,{0},{1})", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                case "AddSeconds":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(SECOND,{0},{1})", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                case "AddMilliseconds":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MILLISECOND,{0},{1})", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                case "AddMinutes":
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MINUTE,{0},{1})", paramName);
+                                    _result.Parameters.Add(paramName, args[0]);
+                                    break;
+                                default:
+                                    throw new Exception("不支持");
+                            }
+                            continue;
+                        }
+                        else if (memberInfo.DeclaringType == ExpressionConsts.EnumerableType)
+                        {
+                            switch (memberInfo.Name)
+                            {
+                                case "Contains":
+                                    if (columnConverter.IsInstanceColumn)
+                                    {
+                                        throw new Exception("不支持");
+                                    }
+                                    converter = string.Format(converter, "{0} in (" + string.Join(",", (IEnumerable<int>)args[0]) + ")");
+                                    break;
+                                default:
+                                    throw new Exception("不支持");
+                            }
+                            continue;
+                        }
+                        else
+                        {
+                            throw new Exception("不支持");
+                        }
+                    default:
+                        throw new Exception();
+                }
+            }
+            return converter;
         }
     }
 }

@@ -47,6 +47,8 @@
     <Compile Include="BaseDAL.cs" />
     <Compile Include="BaseEntity.cs" />
     <Compile Include="Direction.cs" />
+    <Compile Include="DynamicExpression\ExpressionBuilder.cs" />
+    <Compile Include="DynamicExpression\ExpressionConsts.cs" />
     <Compile Include="DynamicSqlParam.cs" />
     <Compile Include="DynamicSqlParamType.cs" />
     <Compile Include="DynamicSqlSorter.cs" />

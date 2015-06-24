@@ -21,7 +21,7 @@ namespace PPD.XLinq.UnitTests
             }
         }
         [TestMethod]
-        public void TestMethod1()
+        public void WhereToList()
         {
             var list = db.Set<User>().Where(x => x.Password == "06ea391fdd9abd6ac43cc858dcc7c4ce" && x.Username == "awfer1").ToList();
 
@@ -65,7 +65,6 @@ namespace PPD.XLinq.UnitTests
         public void Select中取Date()
         {
             var query = (from user in db.Set<User>()
-                         where user.Password == "xxxx" && user.Id == 1
                          select new
                          {
                              Id = user.Id,
@@ -79,16 +78,28 @@ namespace PPD.XLinq.UnitTests
         public void Where方法调用()
         {
             var query = from user in db.Set<User>()
-                        where (user.Password.Substring(0, 1) == "aaaa" ||
-                        user.LastLoginDate.Value.Date == Convert.ToDateTime(DateTime.Now.ToString()).Date.Date &&
-                        user.Password == "xxxx") && user.Id == 1
+                        where (user.Username.Substring(1) == "bcde")
                         select new
                         {
                             Id = user.Id,
                             user.Password,
                             user.LastLoginDate.Value.Date
                         };
-            query.ToList();
+            Console.WriteLine(query.ToList().Count);
+        }
+
+        [TestMethod]
+        public void Where方法调用2()
+        {
+            var query = from user in db.Set<User>()
+                        where (user.Username.Substring(1, 1) == "b")
+                        select new
+                        {
+                            Id = user.Id,
+                            user.Password,
+                            user.LastLoginDate.Value.Date
+                        };
+            Console.WriteLine(query.ToList().Count);
         }
         [TestMethod]
         public void Where方法调用1()
@@ -124,7 +135,7 @@ namespace PPD.XLinq.UnitTests
                         where user.Password == "xxx"
                         select new
                         {
-                            UserId = user.Id,
+                            UserId123 = user.Id,
                             user.Password
                         };
             query.ToList();
@@ -194,7 +205,7 @@ namespace PPD.XLinq.UnitTests
                         join flow in db.Set<TransferWorkFlow>() on order.ToUserId equals flow.UploadUserId
                         select new
                         {
-                            UserId = user.Id,
+                            UserId123 = user.Id,
                             flow.UploadFileName,
                             ToUsername = order.ToUsername
                         };
@@ -209,7 +220,7 @@ namespace PPD.XLinq.UnitTests
                         where flow.UploadUserId == 1
                         select new
                         {
-                            UserId = user.Id,
+                            UserId123 = user.Id,
                             flow.UploadFileName,
                             ToUsername = order.ToUsername
                         };
@@ -224,7 +235,7 @@ namespace PPD.XLinq.UnitTests
                         where flow.UploadUserId == 1
                         select new
                         {
-                            UserId = user.Id,
+                            UserId123 = user.Id,
                             flow.UploadFileName,
                             ToUsername = order.ToUsername,
                             user.LastLoginDate.Value.Date
@@ -400,7 +411,7 @@ namespace PPD.XLinq.UnitTests
                         {
                             t.Username,
                             u.ToUserId,
-                            UserId = user.Id,
+                            UserId123 = user.Id,
                             user.LastLoginDate.Value.Date,
                             flow.UploadFileName
                         };
@@ -416,9 +427,30 @@ namespace PPD.XLinq.UnitTests
                          select new
                          {
                              t.Username,
-                             UserId = user.Id,
+                             UserId123 = user.Id,
                              user.LastLoginDate.Value.Date
                          };
+            query1.ToList();
+        }
+        [TestMethod]
+        public void JoinWhereWhere()
+        {
+            var query1 = (from user in db.Set<User>()
+                          join user1 in db.Set<User>() on user.Password equals user1.Username into test
+                          from t in test.DefaultIfEmpty()
+                          where t.Id == 1
+                          select new
+                          {
+                              t.Username,
+                              UserId123 = user.Id,
+                              user.LastLoginDate.Value.Date
+                          }).Where(x => x.UserId123 == 1);
+            query1.ToList();
+        }
+        [TestMethod]
+        public void NotEqual()
+        {
+            var query1 = db.Set<User>().Where(x => x.Password != "xxxx");
             query1.ToList();
         }
         [TestMethod]
@@ -429,7 +461,7 @@ namespace PPD.XLinq.UnitTests
                          select new
                          {
                              user1.Username,
-                             UserId = user.Id,
+                             UserId123 = user.Id,
                              user.LastLoginDate.Value.Date
                          };
             query1.ToList();
@@ -465,7 +497,7 @@ namespace PPD.XLinq.UnitTests
                         select new
                         {
                             t.Username,
-                            UserId = user.Id,
+                            UserId123 = user.Id,
                             user.LastLoginDate.Value.Date,
                             flow.UploadFileName
                         };
@@ -484,7 +516,7 @@ namespace PPD.XLinq.UnitTests
                          select new
                          {
                              t.Username,
-                             UserId = user.Id,
+                             UserId123 = user.Id,
                              user.LastLoginDate.Value.Date,
                              flow.UploadFileName
                          }).Distinct();
@@ -505,7 +537,7 @@ namespace PPD.XLinq.UnitTests
                          select new
                          {
                              t.Username,
-                             UserId = user.Id,
+                             UserId123 = user.Id,
                              user.LastLoginDate.Value.Date,
                              flow.UploadFileName
                          }).Distinct();
@@ -612,8 +644,8 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void ColumnDateDiffObject()
         {
-            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalDays + DateTime.Now.Day > 5 select user;
-            query.Average(x => x.Id);
+            var query = from user in db.Set<User>() where (DateTime.Now - user.LastLoginDate.Value).TotalDays <= 1 select user;
+            Console.WriteLine(query.Count());
         }
         [TestMethod]
         public void ColumnDateDiffHourObject()
@@ -648,7 +680,7 @@ namespace PPD.XLinq.UnitTests
             query.Average(x => x.Id);
         }
 
-        
+
 
         [TestMethod]
         public void Take()
@@ -685,7 +717,7 @@ namespace PPD.XLinq.UnitTests
                          select new
                          {
                              t.Username,
-                             UserId = user.Id,
+                             UserId123 = user.Id,
                              user.LastLoginDate.Value.Date,
                              flow.UploadFileName
                          }).Distinct();

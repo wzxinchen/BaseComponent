@@ -20,8 +20,10 @@ namespace PPD.XLinq.TranslateModel
         public Type DataType { get; set; }
 
         public string Converter { get; set; }
+        public Stack<ColumnConverter> Converters { get; private set; }
         public Column()
         {
+            Converters = new Stack<ColumnConverter>();
             ConverterParameters = new List<object>();
         }
         public List<object> ConverterParameters { get; private set; }

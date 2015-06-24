@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
+namespace PPD.XLinq.Provider.SQLite.Parser
 {
     public class WhereExpressionVisitor : ExpressionVisitorBase
     {

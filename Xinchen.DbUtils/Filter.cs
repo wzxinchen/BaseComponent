@@ -9,11 +9,22 @@ namespace Xinchen.DbUtils
 {
     public class SqlFilter
     {
+        public static SqlFilter Create(string propertyName, Operation operation, object value)
+        {
+            return new SqlFilter()
+            {
+                Name = propertyName,
+                Operation = operation,
+                Value = value
+            };
+        }
 
         /// <summary>
         /// 字段名
         /// </summary>
         public string Name { get; set; }
+
+        [Obsolete]
         public string ParameterName { get; set; }
 
         /// <summary>
@@ -30,51 +41,51 @@ namespace Xinchen.DbUtils
             return (T)Convert.ChangeType(Value, typeof(T));
         }
 
-        public override string ToString()
-        {
-            //ParameterName = Name + new Random().Next(100000);
-            if (Value == null)
-            {
-                return string.Format("@0 == null", Name);
-            }
-            if (Value is IEnumerable)
-            {
-                return string.Format("@0.Contains({0})", Name);
-            }
-            else
-            {
-                string op = string.Empty;
-                switch (Operation)
-                {
-                    case DbUtils.Operation.Equal:
-                        op = "=";
-                        break;
-                    case DbUtils.Operation.GreaterThan:
-                        op = ">";
-                        break;
-                    case DbUtils.Operation.GreaterThanOrEqual:
-                        op = ">=";
-                        break;
-                    case DbUtils.Operation.LessThan:
-                        op = "<";
-                        break;
-                    case DbUtils.Operation.LessThanOrEqual:
-                        op = "<=";
-                        break;
-                    case DbUtils.Operation.Like:
-                        op = "like";
-                        break;
-                    case DbUtils.Operation.NotEqual:
-                        op = "<>";
-                        break;
-                }
-                if (op == "like")
-                {
-                    return string.Format("{0}.Contains(@0)", Name);
-                }
-                return string.Format("{0} {1} @0", Name, op);
-            }
-        }
+        //public override string ToString()
+        //{
+        //    //ParameterName = Name + new Random().Next(100000);
+        //    if (Value == null)
+        //    {
+        //        return string.Format("@0 == null", Name);
+        //    }
+        //    if (Value is IEnumerable)
+        //    {
+        //        return string.Format("@0.Contains({0})", Name);
+        //    }
+        //    else
+        //    {
+        //        string op = string.Empty;
+        //        switch (Operation)
+        //        {
+        //            case DbUtils.Operation.Equal:
+        //                op = "=";
+        //                break;
+        //            case DbUtils.Operation.GreaterThan:
+        //                op = ">";
+        //                break;
+        //            case DbUtils.Operation.GreaterThanOrEqual:
+        //                op = ">=";
+        //                break;
+        //            case DbUtils.Operation.LessThan:
+        //                op = "<";
+        //                break;
+        //            case DbUtils.Operation.LessThanOrEqual:
+        //                op = "<=";
+        //                break;
+        //            case DbUtils.Operation.Like:
+        //                op = "like";
+        //                break;
+        //            case DbUtils.Operation.NotEqual:
+        //                op = "<>";
+        //                break;
+        //        }
+        //        if (op == "like")
+        //        {
+        //            return string.Format("{0}.Contains(@0)", Name);
+        //        }
+        //        return string.Format("{0} {1} @0", Name, op);
+        //    }
+        //}
     }
 
     public class Sort

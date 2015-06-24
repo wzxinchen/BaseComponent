@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.Utils;
-namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
+namespace PPD.XLinq.Provider.SQLite.Parser
 {
     /// <summary>
     /// 对访问成员属性的表达式进行分析

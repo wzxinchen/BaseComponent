@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xinchen.Utils;
-namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
+namespace PPD.XLinq.Provider.Parser
 {
     public class Parser : ParserBase
     {
@@ -17,7 +17,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2.Parser
         {
             _expression = expression;
             parser.ElementType = ElementType;
-            parser.Parse(expression); 
+            parser.Parse(expression);
             var provider = ProviderFactory.CreateProvider(ConfigManager.DataBaseType);
             var builderFactory = provider.CreateSqlBuilderFactory();
             var builder = builderFactory.CreateSqlBuilder();

@@ -16,6 +16,7 @@ namespace PPD.XLinq.TranslateModel
         LessThan,
         LessThanOrEqual,
         Not,
+        NotEqual,
         Add,
         Substarct,
         Multiply,

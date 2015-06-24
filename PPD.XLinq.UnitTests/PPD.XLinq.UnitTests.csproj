@@ -26,6 +26,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -38,6 +39,9 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Data.SQLite">
+      <HintPath>..\packages\Lib\System.Data.SQLite.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -54,6 +58,7 @@
   <ItemGroup>
     <Compile Include="EnumTest1.cs" />
     <Compile Include="Model\EnumTest.cs" />
+    <Compile Include="Model\LargeUser.cs" />
     <Compile Include="Model\TestDataContext.cs" />
     <Compile Include="Model\TransferOrder.cs" />
     <Compile Include="Model\TransferWorkFlow.cs" />
@@ -61,6 +66,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryTest.cs" />
     <Compile Include="InsertTest.cs" />
+    <Compile Include="DynamicExpressTest.cs" />
     <Compile Include="User1.cs" />
   </ItemGroup>
   <ItemGroup>

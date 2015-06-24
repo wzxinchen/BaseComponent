@@ -27,6 +27,11 @@ namespace Xinchen.ObjectMapper
             return new EntityMapper<TEntity>().Map(ds, keySelector);
         }
 
+        public static TResult Map<TSource, TResult>(TSource source)
+        {
+            return EntityMapper.Map<TSource, TResult>(source);
+        }
+
         //public static T Map<T>(DataSet ds)
         //{
         //    //EntityMapper.Map<

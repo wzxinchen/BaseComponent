@@ -71,7 +71,7 @@ namespace Xinchen.DynamicObject
             {
                 return proxyType;
             }
-            bool save = true;
+            bool save = false;
             AssemblyBuilder assemblyBuilder = DefineDynamicAssembly(save);
             //动态创建模块
             ModuleBuilder moduleBuilder = DefineDynamicModule(assemblyBuilder, save);

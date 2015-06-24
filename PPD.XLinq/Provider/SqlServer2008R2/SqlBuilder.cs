@@ -466,6 +466,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
 
         public override ParseResult BuildSql(BuilderContext context)
         {
+            tableName = null;
             _context = context;
             _result = new ParseResult();
             switch (context.SqlType)

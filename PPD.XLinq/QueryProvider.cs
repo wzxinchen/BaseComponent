@@ -90,7 +90,7 @@ namespace PPD.XLinq
                     if (typeof(IEnumerable).IsAssignableFrom(type))
                     {
                         var list = EntityMapper.Map(type.GetGenericArguments()[0], ds);
-                        if (_context.EnableProxy)
+                        if (_context.IsEnableProxy)
                         {
                             if (list.Count > 10)
                             {
@@ -102,9 +102,9 @@ namespace PPD.XLinq
                                 {
                                     list[i] = DynamicProxy.CreateDynamicProxy(list[i]);
                                 }
+                                var entityOp = _context.GetEntityOperator(type);
+                                entityOp.AddEditing(list);
                             }
-                            var entityOp = _context.GetEntityOperator(type);
-                            entityOp.AddEditing(list);
                         }
                         return (TResult)list;
                     }
@@ -139,7 +139,7 @@ namespace PPD.XLinq
                         return default(TResult);
                     }
                     var result = results[0];
-                    if (_context.EnableProxy)
+                    if (_context.IsEnableProxy)
                     {
                         var entityOp = _context.GetEntityOperator(type);
                         result = DynamicProxy.CreateDynamicProxy(result);

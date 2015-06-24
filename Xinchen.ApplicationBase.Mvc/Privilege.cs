@@ -15,6 +15,7 @@
     using Xinchen.PrivilegeManagement.ViewModel;
     using System.Linq.Expressions;
     using System.Linq.Dynamic;
+    using Xinchen.DbUtils.DynamicExpression;
     public class Privilege
     {
         private Xinchen.PrivilegeManagement.PrivilegeBase _privilegeBase;
@@ -310,52 +311,52 @@
             return list;
         }
 
-        public PageResult<UserRoleDetailInfo> GetUsers(int page, int pageSize, IList<SqlFilter> filters = null, Sort sort = null)
+        public PageResult<UserRoleDetailInfo> GetUsers(int page, int pageSize, IList<SqlFilter> filters, Sort sort)
         {
-            int[] rolesId = null;
-            if (filters != null)
-            {
-                foreach (var filter in filters)
-                {
-                    switch (filter.Name)
-                    {
-                        case "Roles":
-                            rolesId = filter.GetValue<List<int>>().ToArray();
-                            break;
-                    }
-                }
-            }
-            Func<IQueryable<UserRoleDetailInfo>, IQueryable<UserRoleDetailInfo>> extra = query =>
-            {
-                if (filters != null)
-                {
-                    foreach (var filter in filters)
-                    {
-                        switch (filter.Name)
-                        {
-                            case "Roles":
-                                break;
-                            case "Status":
-                                var status = filter.Value as IList<int>;
-                                query = query.Where(x => status.Contains((int)x.Status));
-                                break;
-                            default:
-                                query = query.Where(filter.ToString(), filter.Value);
-                                break;
-                        }
-                    }
-                }
-                if (sort == null)
-                {
-                    sort = new Sort();
-                    sort.Field = "Id";
-                    sort.SortOrder = SortOrder.DESCENDING;
-                }
-                query = query.OrderBy(sort.Field + " " + sort.SortOrder.ToString());
-                return query;
-            };
+            // int[] rolesId = null;
+            //if (filters != null)
+            //{
+            //    foreach (var filter in filters)
+            //    {
+            //        switch (filter.Name)
+            //        {
+            //            case "Roles":
+            //                rolesId = filter.GetValue<List<int>>().ToArray();
+            //                break;
+            //        }
+            //    }
+            //}
+            //Func<IQueryable<UserRoleDetailInfo>, IQueryable<UserRoleDetailInfo>> extra = query =>
+            //{
+            //    if (filters != null)
+            //    {
+            //        foreach (var filter in filters)
+            //        {
+            //            switch (filter.Name)
+            //            {
+            //                case "Roles":
+            //                    break;
+            //                case "Status":
+            //                    var status = filter.Value as IList<int>;
+            //                    query = query.Where(x => status.Contains((int)x.Status));
+            //                    break;
+            //                default:
+            //                    query = query.Where(filter.ToString(), filter.Value);
+            //                    break;
+            //            }
+            //        }
+            //    }
+            //    if (sort == null)
+            //    {
+            //        sort = new Sort();
+            //        sort.Field = "Id";
+            //        sort.SortOrder = SortOrder.DESCENDING;
+            //    }
+            //    query = query.OrderBy(sort.Field + " " + sort.SortOrder.ToString());
+            //    return query;
+            //};
 
-            var pr = _privilegeBase.GetUsers(page, pageSize, rolesId, extra);
+            var pr = _privilegeBase.GetUsers(page, pageSize, filters, sort);
             var userRoleDict = _privilegeBase.GetUserRoles().GroupBy(x => x.UserId);
             var roles = _privilegeBase.GetRoles().ToDictionary(x => x.Id);
             foreach (var userRole in pr.Data)

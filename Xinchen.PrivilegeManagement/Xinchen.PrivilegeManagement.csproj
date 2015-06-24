@@ -79,6 +79,10 @@
       <Project>{12c3be5a-0ca9-4429-a14d-e86404f0457b}</Project>
       <Name>Xinchen.DbUtils</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Xinchen.ObjectMapper\Xinchen.ObjectMapper.csproj">
+      <Project>{c892ee99-6935-4a23-b086-2e542ce7e7d0}</Project>
+      <Name>Xinchen.ObjectMapper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Xinchen.Utils\Xinchen.Utils.csproj">
       <Project>{6be86e93-58b7-463a-a4d9-7f7da8a0089a}</Project>
       <Name>Xinchen.Utils</Name>

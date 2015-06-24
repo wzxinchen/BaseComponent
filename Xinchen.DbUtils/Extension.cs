@@ -6,8 +6,9 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.DbUtils;
+using Xinchen.DbUtils.DynamicExpression;
 
-namespace PPD.XLinq
+namespace Xinchen.DbUtils
 {
     public static class Extension
     {
@@ -52,6 +53,26 @@ namespace PPD.XLinq
         source.Expression,
         Expression.Quote(predicate)
       }));
+        }
+
+        public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, IList<SqlFilter> filters)
+        {
+            if (filters == null || !filters.Any())
+            {
+                return source;
+            }
+            var builder = new ExpressionBuilder<TSource>();
+            var where = builder.Build(filters);
+            return source.Where(where);
+        }
+        public static IQueryable<TSource> OrderBy<TSource>(this IQueryable<TSource> source, IList<Sort> sorts)
+        {
+            if (sorts == null || !sorts.Any())
+            {
+                return source;
+            }
+            var builder = new ExpressionBuilder<TSource>();
+            return builder.Build(source, sorts);
         }
     }
 }

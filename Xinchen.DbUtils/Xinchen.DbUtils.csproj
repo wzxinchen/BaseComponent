@@ -52,6 +52,7 @@
     <Compile Include="DynamicSqlParam.cs" />
     <Compile Include="DynamicSqlParamType.cs" />
     <Compile Include="DynamicSqlSorter.cs" />
+    <Compile Include="Extension.cs" />
     <Compile Include="Filter.cs" />
     <Compile Include="IBLL.cs" />
     <Compile Include="IRepository.cs" />

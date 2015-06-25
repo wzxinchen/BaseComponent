@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.DbUtils;
@@ -134,6 +135,38 @@ namespace Xinchen.DbUtils.DynamicExpression
                 return Expression.Call(propertyExp, ExpressionConsts.StringContains, valueExp);
             }
             return Expression.Call(null, ExpressionConsts.IEnumerableListContains.MakeGenericMethod(ExpressionConsts.Int32Type), valueExp, propertyExp);
+        }
+
+        public IQueryable<TParameter> Build(IQueryable<TParameter> source, IList<Sort> sorts)
+        {
+            bool first = true;
+            foreach (var sort in sorts)
+            {
+                MemberExpression propertyExp = (MemberExpression)Expression.Property(_parameterExpression, sort.Field);
+                var propertyType = ((PropertyInfo)propertyExp.Member).PropertyType;
+                MethodInfo sortMethod = null;
+                switch (sort.SortOrder)
+                {
+                    case SortOrder.ASC:
+                        if (first)
+                            sortMethod = ExpressionConsts.OrderByMethod.MakeGenericMethod(_parameterType, propertyType);
+                        else
+                            sortMethod = ExpressionConsts.ThenByMethod.MakeGenericMethod(_parameterType, propertyType);
+                        break;
+                    case SortOrder.DESCENDING:
+                        if (first)
+                            sortMethod = ExpressionConsts.OrderByDescendingMethod.MakeGenericMethod(_parameterType, propertyType);
+                        else
+                            sortMethod = ExpressionConsts.ThenByDescendingMethod.MakeGenericMethod(_parameterType, propertyType);
+                        break;
+                    default:
+                        throw new Exception(sort.SortOrder.ToString());
+                }
+                first = false;
+                var lambda = Expression.Lambda(propertyExp, _parameterExpression);
+                source = source.Provider.CreateQuery<TParameter>(Expression.Call(null, sortMethod, source.Expression, Expression.Quote(lambda)));
+            }
+            return source;
         }
     }
 }

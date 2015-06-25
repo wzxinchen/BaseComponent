@@ -237,7 +237,7 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void QueryUpdate()
         {
-            var user = db.QueryEnableProxy(() => db.Set<User>().FirstOrDefault());
+            var user =  db.Set<User>().FirstOrDefault();
             user.IsEnabled = false;
             user.LastLoginDate = DateTime.Now.Date;
             user.Password = "xxxxxx";
@@ -257,12 +257,12 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void QueryUpdateMultiEntity()
         {
-            var user = db.QueryEnableProxy(() => db.Set<User>().FirstOrDefault(x => x.Id == 17));
+            var user =  db.Set<User>().FirstOrDefault(x => x.Id == 17);
             user.IsEnabled = false;
             user.LastLoginDate = DateTime.Now.Date;
             user.Password = "password1";
             user.Username = "username1";
-            user = db.QueryEnableProxy(() => db.Set<User>().FirstOrDefault(x => x.Id == 18));
+            user = db.Set<User>().FirstOrDefault(x => x.Id == 18);
             user.Password = "password2";
             user.Username = "username2";
             db.SaveChanges();

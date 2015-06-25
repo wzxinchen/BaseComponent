@@ -49,7 +49,6 @@
     <Compile Include="DataContext.cs" />
     <Compile Include="DataQuery.cs" />
     <Compile Include="DbSet.cs" />
-    <Compile Include="Extension.cs" />
     <Compile Include="IEntityOperator.cs" />
     <Compile Include="ParseResult.cs" />
     <Compile Include="Parser\ExpressionVisitorBase.cs" />

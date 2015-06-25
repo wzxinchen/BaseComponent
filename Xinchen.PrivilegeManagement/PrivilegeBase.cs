@@ -14,6 +14,7 @@
     using Xinchen.Utils.DataAnnotations;
     using System.Linq.Expressions;
     using Xinchen.DbUtils;
+    using Xinchen.ObjectMapper;
     public class PrivilegeBase
     {
         private HttpContext _httpContext = HttpContext.Current;
@@ -446,35 +447,22 @@
             return this.PrivilegeContextProvider.GetRepository().Use<UserRole>().Query.ToList();
         }
 
-        public PageResult<UserRoleDetailInfo> GetUsers(int page, int limit, int[] rolesId, Func<IQueryable<UserRoleDetailInfo>, IQueryable<UserRoleDetailInfo>> filter)
+        public PageResult<UserRoleDetailInfo> GetUsers(int page, int limit, IList<SqlFilter> filters,params Sort[] sorts)
         {
             var repo = PrivilegeContextProvider.GetRepository();
-            var pr = repo.Use<User>().Page(page, limit, x =>
-            {
-                var filterRoles = rolesId != null && rolesId.Count() > 0;
-                if (rolesId == null)
-                {
-                    rolesId = new int[0];
-                }
-                var q = (from user in x
-                         join userRole in repo.Use<UserRole>().Query on user.Id equals userRole.UserId into us
-                         from u in us.DefaultIfEmpty()
-                         where !filterRoles || rolesId.Contains(u.RoleId)
-                         select new UserRoleDetailInfo()
-                         {
-                             CreateTime = user.CreateTime,
-                             Description = user.Description,
-                             Id = user.Id,
-                             Status = user.Status,
-                             Username = user.Username
-                         }).Distinct();
-                if (filter != null)
-                {
-                    q = filter(q);
-                }
-                return q;
-            });
-            return pr;
+            //var pr = repo.Use<User>().Query.Where(filters).Page(page, limit);
+            return (from user in repo.Use<User>().Query
+                    join userRole in repo.Use<UserRole>().Query on user.Id equals userRole.UserId into us
+                    from u in us.DefaultIfEmpty()
+                    select new UserRoleDetailInfo()
+                    {
+                        CreateTime = user.CreateTime,
+                        Description = user.Description,
+                        Id = user.Id,
+                        RoleId = u.RoleId,
+                        Status = user.Status,
+                        Username = user.Username
+                    }).Where(filters).OrderBy(sorts).Distinct().Page(page, limit);
             //            string sql = @"SELECT DISTINCT users.Id ,
             //                    Username ,
             //        users. CreateTime,
@@ -548,7 +536,7 @@
                         {
                             throw new ApplicationException("用户所拥有的角色[" + role2.Name + "]被禁用，无法登录");
                         }
-                        userInfo.Roles.Add(roleId, role2);
+                        userInfo.Roles.Add(roleId, Mapper.Map<Role, Role>(role2));
                         IList<RolePrivilege> source = reps.Use<RolePrivilege>().GetList(x => x.RoleId == roleId);
                         if (predicate == null)
                         {
@@ -558,7 +546,7 @@
                         {
                             int privilegeId = privilege.PrivilegeId;
                             Privilege privilege2 = reps.Use<Privilege>().Get(x => x.Id == privilegeId);
-                            userInfo.Privileges.Add(privilegeId, privilege2);
+                            userInfo.Privileges.Add(privilegeId, Mapper.Map<Privilege, Privilege>(privilege2));
                         }
                     }
                 }

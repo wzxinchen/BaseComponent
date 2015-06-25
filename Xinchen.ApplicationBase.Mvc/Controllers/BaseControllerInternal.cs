@@ -35,7 +35,7 @@ namespace Xinchen.ApplicationBase.Mvc
             {
                 success = false,
                 message = msg
-            },JsonRequestBehavior.AllowGet);
+            }, JsonRequestBehavior.AllowGet);
         }
 
         public ActionResult Success()
@@ -106,6 +106,11 @@ namespace Xinchen.ApplicationBase.Mvc
         public IList<SqlFilter> ToFilters(FilterConditions e)
         {
             return FilterConverter.ConvertToFilters(e);
+        }
+
+        public Sort ToSort(DataSorter[] sorters)
+        {
+            return FilterConverter.ConvertToSorter(sorters);
         }
 
         public ActionResult ExtError()

@@ -43,24 +43,24 @@ namespace PPD.XLinq
         {
             return (IEntityOperator)_entitieDbSets.Get(entityType);
         }
-        bool _enableProxy = false;
+        bool _enableProxy = true;
 
-        public bool EnableProxy
+        public bool IsEnableProxy
         {
             get { return _enableProxy; }
         }
 
         /// <summary>
-        /// 默认查询出来的数据不支持直接修改，通过此方法查询的不超过十条的数据可以支持直接修改
+        /// 默认查询出来的不超过十条的数据支持直接修改，但查询性能较低，通过此方法查询的性能会高一点，但无法支持修改
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="query"></param>
         /// <returns></returns>
-        public TResult QueryEnableProxy<TResult>(Func<TResult> query)
+        public TResult QueryDisableProxy<TResult>(Func<TResult> query)
         {
-            _enableProxy = true;
-            var result = query();
             _enableProxy = false;
+            var result = query();
+            _enableProxy = true;
             return result;
         }
         //}

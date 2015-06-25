@@ -536,6 +536,9 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                                 case "Date":
                                     converter = string.Format(converter, "CONVERT(DATE,{0},211)");
                                     break;
+                                case "Value":
+
+                                    break;
                                 default:
                                     throw new Exception("不支持");
                             }

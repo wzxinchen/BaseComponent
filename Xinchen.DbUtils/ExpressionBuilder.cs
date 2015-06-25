@@ -47,18 +47,63 @@ namespace Xinchen.DbUtils
             {
                 propertyExp = Expression.Convert(propertyExp, value.GetType());
             }
-            var valueExp = Expression.Constant(value);
+            Expression valueExp = null;
+            DateTime? date = DateTime.MinValue;
             switch (operation)
             {
                 case Operation.Equal:
+                    date = value as DateTime?;
+                    valueExp = Expression.Constant(value);
+                    if (date != null && date.Value.Date == date.Value)
+                    {
+                        propertyExp = Expression.Property(propertyExp, ReflectorConsts.DatePropertyOfDateTime);
+                    }
                     return Expression.Equal(propertyExp, valueExp);
                 case Operation.GreaterThan:
+                    date = value as DateTime?;
+                    if (date != null && date.Value.Date == date.Value)
+                    {
+                        valueExp = Expression.Constant(date.Value.Date);
+                    }
+                    else
+                    {
+                        valueExp = Expression.Constant(value);
+                    }
+                    //propertyExp = Expression.Property(propertyExp, ReflectorConsts.DatePropertyOfDateTime);
                     return Expression.GreaterThan(propertyExp, valueExp);
                 case Operation.GreaterThanOrEqual:
+                    date = value as DateTime?;
+                    if (date != null && date.Value.Date == date.Value)
+                    {
+                        valueExp = Expression.Constant(date.Value.Date);
+                    }
+                    else
+                    {
+                        valueExp = Expression.Constant(value);
+                    }
+                    //propertyExp = Expression.Property(propertyExp, ReflectorConsts.DatePropertyOfDateTime);
                     return Expression.GreaterThanOrEqual(propertyExp, valueExp);
                 case Operation.LessThan:
+                    date = value as DateTime?;
+                    if (date != null && date.Value.Date == date.Value)
+                    {
+                        valueExp = Expression.Constant(date.Value.Date.AddDays(1));
+                    }
+                    else
+                    {
+                        valueExp = Expression.Constant(value);
+                    }
                     return Expression.LessThan(propertyExp, valueExp);
                 case Operation.LessThanOrEqual:
+                    date = value as DateTime?;
+                    if (date != null && date.Value.Date == date.Value)
+                    {
+                        valueExp = Expression.Constant(date.Value.Date.AddDays(1));
+                    }
+                    else
+                    {
+                        valueExp = Expression.Constant(value);
+                    }
                     return Expression.LessThanOrEqual(propertyExp, valueExp);
                 case Operation.NotEqual:
                     return Expression.NotEqual(propertyExp, valueExp);
@@ -99,11 +144,16 @@ namespace Xinchen.DbUtils
             return Expression.Lambda<Func<TParameter, bool>>(bodyExp, _parameterExpression);
         }
 
-        public Expression<Func<TParameter, bool>> Build(IList<SqlFilter> filters)
+        public Expression<Func<TParameter, bool>> Build(IList<SqlFilter> filters, Dictionary<string, string> filterNameMap)
         {
             var expressions = new List<Expression>();
             foreach (var filter in filters)
             {
+                var name = filterNameMap.Get(filter.Name);
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    name = filter.Name;
+                }
                 switch (filter.Operation)
                 {
                     case Operation.Equal:
@@ -112,11 +162,11 @@ namespace Xinchen.DbUtils
                     case Operation.LessThan:
                     case Operation.LessThanOrEqual:
                     case Operation.NotEqual:
-                        expressions.Add(BuildBinaryExpression(filter.Name, filter.Value, filter.Operation));
+                        expressions.Add(BuildBinaryExpression(name, filter.Value, filter.Operation));
                         break;
                     case Operation.Like:
                     case Operation.List:
-                        expressions.Add(BuildContains(filter.Name, filter.Value));
+                        expressions.Add(BuildContains(name, filter.Value));
                         break;
                     default:
                         throw new Exception();

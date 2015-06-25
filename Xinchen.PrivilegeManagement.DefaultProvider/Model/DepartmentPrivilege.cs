@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Xinchen.Utils.DataAnnotations;
 namespace Xinchen.PrivilegeManagement.DefaultProvider.Model
 {

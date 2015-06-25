@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using Xinchen.Utils.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Xinchen.DbUtils.DataAnnotations;
 namespace Xinchen.PrivilegeManagement.DefaultProvider.Model
 {
 	[Table("RoleMenuses")]

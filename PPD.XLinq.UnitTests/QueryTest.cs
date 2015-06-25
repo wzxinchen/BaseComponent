@@ -320,6 +320,17 @@ namespace PPD.XLinq.UnitTests
             db.Set<User>().Where(x => x.Password.Contains("xxxxxxxxxxxx")).ToList();
         }
         [TestMethod]
+        public void SelectWhereSearch()
+        {
+            db.Set<User>().Select(x => new //UserModel()
+            {
+                Password = x.Password,
+                Id = x.Id,
+                CreateTime = x.CreateTime
+            }).Where(x => x.Password.Contains("xxxxxxxxxxxx") && x.Id == 1 && x.CreateTime.Date == DateTime.Now.Date).ToList();
+        }
+
+        [TestMethod]
         public void ColumnNotContainsString()
         {
             db.Set<User>().Where(x => !x.Password.Contains("xxxxxxxxxxxx")).ToList();

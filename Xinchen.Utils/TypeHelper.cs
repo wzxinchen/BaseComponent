@@ -27,11 +27,20 @@ namespace Xinchen.Utils
             {
                 return false;
             }
+            if (!IsCompilerGenerated(type))
+            {
+                return false;
+            }
             if (type.GetGenericTypeDefinition() == ReflectorConsts.NullableType)
             {
                 return true;
             }
             return false;
+        }
+
+        public static bool IsCompilerGenerated(Type type)
+        {
+            return type.GetCustomAttributes(ReflectorConsts.CompilerGeneratedAttributeType,false).Any();
         }
     }
 }

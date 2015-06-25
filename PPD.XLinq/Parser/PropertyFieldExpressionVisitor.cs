@@ -203,6 +203,31 @@ namespace PPD.XLinq.Provider.Parser
 
         SchemaModel.Table GetTable()
         {
+            while (true)
+            {
+                var memExp = (MemberExpression)_memberInfos.Peek();
+                _tableMember = memExp.Member;
+                Type type = null;
+                if (_tableMember.MemberType == MemberTypes.Field)
+                {
+                    type = ((FieldInfo)_tableMember).FieldType;
+                }
+                else
+                {
+                    type = ((PropertyInfo)_tableMember).PropertyType;
+                }
+                if (TypeHelper.IsCompilerGenerated(type))
+                {
+                    _memberInfos.Pop();
+                    continue;
+                }
+                if (TableInfoManager.IsEntity(type))
+                {
+                    _memberInfos.Pop();
+                    return GetTable(type);
+                }
+                return null;
+            }
             _tableMember = ((MemberExpression)_memberInfos.Pop()).Member;
             var tableType = ((PropertyInfo)_tableMember).PropertyType;
             return GetTable(tableType);
@@ -316,13 +341,12 @@ namespace PPD.XLinq.Provider.Parser
             }
             else
             {
-                SchemaModel.Table tableInfo = null;
+                SchemaModel.Table tableInfo = GetTable();
                 MemberInfo columnMember = null;
                 var tableAlias = string.Empty;
                 Table table = null;
-                if (_memberInfos.Count > 1)
+                if (tableInfo != null)
                 {
-                    tableInfo = GetTable();
                     tableAlias = _tableMember.Name;
                     columnMember = ((MemberExpression)_memberInfos.Pop()).Member;
                     if (_joins != null)
@@ -345,6 +369,13 @@ namespace PPD.XLinq.Provider.Parser
                     tableAlias = table.Alias;
                     tableInfo = GetTable(table.Type);
                 }
+                //if (_memberInfos.Count > 1)
+                //{
+                //    tableInfo = GetTable();
+                //}
+                //else
+                //{
+                //}
                 var columnType = ((PropertyInfo)columnMember).PropertyType;
                 var columnName = string.Empty;
                 var columnSechma = tableInfo.Columns.Get(columnMember.Name);

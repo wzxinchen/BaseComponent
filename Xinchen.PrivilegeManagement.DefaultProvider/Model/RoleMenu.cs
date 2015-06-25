@@ -2,8 +2,9 @@
 {
     using System;
     using System.ComponentModel.DataAnnotations;
+    using System.ComponentModel.DataAnnotations.Schema;
     using System.Runtime.CompilerServices;
-    using Xinchen.Utils.DataAnnotations;
+    using Xinchen.DbUtils.DataAnnotations;
 
     [Table("RoleMenus")]
     public class RoleMenu

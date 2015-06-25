@@ -447,10 +447,12 @@
             return this.PrivilegeContextProvider.GetRepository().Use<UserRole>().Query.ToList();
         }
 
-        public PageResult<UserRoleDetailInfo> GetUsers(int page, int limit, IList<SqlFilter> filters,params Sort[] sorts)
+        public PageResult<UserRoleDetailInfo> GetUsers(int page, int limit, IList<SqlFilter> filters, params Sort[] sorts)
         {
             var repo = PrivilegeContextProvider.GetRepository();
             //var pr = repo.Use<User>().Query.Where(filters).Page(page, limit);
+            var map = new Dictionary<string, string>();
+            map.Add("Roles", "RoleId");
             return (from user in repo.Use<User>().Query
                     join userRole in repo.Use<UserRole>().Query on user.Id equals userRole.UserId into us
                     from u in us.DefaultIfEmpty()
@@ -462,7 +464,7 @@
                         RoleId = u.RoleId,
                         Status = user.Status,
                         Username = user.Username
-                    }).Where(filters).OrderBy(sorts).Distinct().Page(page, limit);
+                    }).Where(filters, map).OrderBy(sorts).Distinct().Page(page, limit);
             //            string sql = @"SELECT DISTINCT users.Id ,
             //                    Username ,
             //        users. CreateTime,

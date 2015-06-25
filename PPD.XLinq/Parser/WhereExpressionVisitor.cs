@@ -557,6 +557,60 @@ namespace PPD.XLinq.Provider.Parser
                         return Token.Create(condition);
                     }
                 }
+                else if (leftResult.Type == TokenType.Column)
+                {
+                    if (rightResult == null)
+                    {
+                        return leftResult;
+                    }
+                    else if (rightResult.IsBool())
+                    {
+                        var rr = (bool)rightResult.Object;
+                        switch (node.NodeType)
+                        {
+                            case ExpressionType.AndAlso:
+                                if (rr)
+                                {
+                                    return leftResult;
+                                }
+                                break;
+                            case ExpressionType.OrElse:
+                                if (!rr)
+                                {
+                                    return leftResult;
+                                }
+                                break;
+                            default:
+                                throw new Exception();
+                        }
+                    }
+                    else if (rightResult.Type == TokenType.Condition)
+                    {
+                        var condition = new Condition();
+                        condition.Left = leftResult;
+                        condition.Right = rightResult;
+                        condition.CompareType = SelectLogicCompareType(node.NodeType);
+                        return Token.Create(condition);
+                    }
+                    else if (rightResult.Type == TokenType.Column)
+                    {
+                        var condition = new Condition();
+                        condition.Left = leftResult;
+                        condition.Right = rightResult;
+                        condition.CompareType = SelectLogicCompareType(node.NodeType);
+                        return Token.Create(condition);
+                    }
+                    else
+                    {
+                        var leftToken = (Token)leftResult;
+                        var rightToken = Token.Create(rightResult);
+                        var condition = new Condition();
+                        condition.Left = leftToken;
+                        condition.Right = rightToken;
+                        condition.CompareType = SelectLogicCompareType(node.NodeType);
+                        return Token.Create(condition);
+                    }
+                }
                 //else if (leftResult is Token)
                 //{
                 //    if (rightResult == null)

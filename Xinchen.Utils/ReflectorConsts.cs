@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,10 +22,12 @@ namespace Xinchen.Utils
         public static readonly Type Int32Type = typeof(Int32);
         public static readonly Type NullableType = typeof(Nullable<>);
         public static readonly Type StringType = typeof(string);
+        public static readonly Type DoubleType = typeof(double);
 
         public static readonly Type DateTimeType = typeof(DateTime);
         public static readonly Type DateTimeNullableType = typeof(DateTime?);
         public static readonly Type TimeSpanType = typeof(TimeSpan);
+        public static readonly Type CompilerGeneratedAttributeType = typeof(CompilerGeneratedAttribute);
 
         public static readonly MethodInfo OrderByMethod = QueryableType.GetMethods().FirstOrDefault(x => x.Name == "OrderBy" && x.GetParameters().Length == 2);
         public static readonly MethodInfo OrderByDescendingMethod = QueryableType.GetMethods().FirstOrDefault(x => x.Name == "OrderByDescending" && x.GetParameters().Length == 2);
@@ -36,6 +39,10 @@ namespace Xinchen.Utils
         public static readonly MethodInfo ConvertToStringMethod = ConvertType.GetMethod("ToString", new Type[] { ObjectType });
         public static readonly MethodInfo ConvertToInt32Method = ConvertType.GetMethod("ToInt32", new Type[] { ObjectType });
         public static readonly MethodInfo ConvertToBoolMethod = ConvertType.GetMethod("ToBool", new Type[] { ObjectType });
+        public static readonly MethodInfo AddDaysMethod = DateTimeType.GetMethod("AddDays", new Type[] { DoubleType });
+
+
+        public static readonly PropertyInfo DatePropertyOfDateTime = DateTimeType.GetProperty("Date");
 
     }
 }

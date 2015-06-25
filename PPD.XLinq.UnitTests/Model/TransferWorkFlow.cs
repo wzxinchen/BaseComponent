@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xinchen.DbUtils.DataAnnotations;
 using Xinchen.Utils.DataAnnotations;
 
 namespace PPD.XLinq.UnitTests.Model

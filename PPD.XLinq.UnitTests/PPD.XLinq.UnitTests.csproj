@@ -68,6 +68,7 @@
     <Compile Include="InsertTest.cs" />
     <Compile Include="DynamicExpressTest.cs" />
     <Compile Include="User1.cs" />
+    <Compile Include="UserModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

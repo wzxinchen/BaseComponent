@@ -54,15 +54,20 @@ namespace Xinchen.DbUtils
       }));
         }
 
-        public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, IList<SqlFilter> filters)
+        public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, IList<SqlFilter> filters,Dictionary<string,string> filterNameMap)
         {
             if (filters == null || !filters.Any())
             {
                 return source;
             }
             var builder = new ExpressionBuilder<TSource>();
-            var where = builder.Build(filters);
+            var where = builder.Build(filters, filterNameMap);
             return source.Where(where);
+        }
+
+        public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, IList<SqlFilter> filters)
+        {
+            return Where(source, filters, new Dictionary<string, string>());
         }
         public static IQueryable<TSource> OrderBy<TSource>(this IQueryable<TSource> source, IList<Sort> sorts)
         {

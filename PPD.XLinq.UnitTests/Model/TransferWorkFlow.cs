@@ -1,14 +1,16 @@
-﻿using PPD.XLinq.Attributes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xinchen.Utils.DataAnnotations;
 
 namespace PPD.XLinq.UnitTests.Model
 {
-    [Table("ppdai","TransferWorkFlows")]
+    [DataBase("ppdai")]
+    [Table("TransferWorkFlows")]
     //[Table("TransferWorkFlows")]
     public class TransferWorkFlow
     {

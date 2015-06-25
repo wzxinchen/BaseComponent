@@ -5,11 +5,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xinchen.Utils.DataAnnotations;
 
 namespace PPD.XLinq.UnitTests.Model
 {
-
-    [PPD.XLinq.Attributes.Table("ppdai","User")]
+    [DataBase("ppdai")]
+    [Table("User")]
     //[Table("User")]
     public class User
     {

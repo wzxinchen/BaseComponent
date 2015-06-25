@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.DbUtils;
-using Xinchen.DbUtils.DynamicExpression;
 
 namespace Xinchen.DbUtils
 {

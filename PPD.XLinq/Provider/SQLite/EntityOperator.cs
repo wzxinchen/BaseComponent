@@ -15,9 +15,9 @@ namespace PPD.XLinq.Provider.SQLite
         ProviderBase _provider;
         SqlExecutor _sqlExecutor;
         SqlBuilderBase _sqlBuilder;
-        public EntityOperator()
+        public EntityOperator(ProviderBase provider)
         {
-            _provider = ProviderFactory.CreateProvider();
+            _provider = provider;
             _sqlExecutor = _provider.CreateSqlExecutor();
             _sqlBuilder = _provider.CreateSqlBuilderFactory().CreateSqlBuilder();
         }

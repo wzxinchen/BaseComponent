@@ -1,5 +1,4 @@
-﻿using PPD.XLinq.Attributes;
-using PPD.XLinq.SchemaModel;
+﻿using PPD.XLinq.SchemaModel;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -9,13 +8,15 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.Utils;
+using Xinchen.Utils.DataAnnotations;
 
 namespace PPD.XLinq
 {
     public class TableInfoManager
     {
         static Type _columnAttrType = typeof(ColumnAttribute);
-        static Type _tableAttrType = typeof(PPD.XLinq.Attributes.TableAttribute);
+        static Type _tableAttrType = typeof(TableAttribute);
+        static Type _dataBaseAttrType = typeof(DataBaseAttribute);
         static Type _keyAttrType = typeof(KeyAttribute);
         static Type _dataBaseGeneratedAttrType = typeof(DatabaseGeneratedAttribute);
         static Dictionary<Type, Table> _tableTypeMap = new Dictionary<Type, Table>();
@@ -51,17 +52,21 @@ namespace PPD.XLinq
                 {
                     throw new Exception("不是实体类型");
                 }
-                var tableAttr = (PPD.XLinq.Attributes.TableAttribute)entityType.GetCustomAttributes(_tableAttrType, true).FirstOrDefault();
-                table = new Table();
+                var tableAttr = (TableAttribute)entityType.GetCustomAttributes(_tableAttrType, true).FirstOrDefault();
                 string tableName, dbName = null;
-                if (tableAttr == null)
+                table = new Table();
+                if (tableAttr != null)
                 {
-                    tableName = StringHelper.ToPlural(entityType.Name);
+                    tableName = tableAttr.Name;
                 }
                 else
                 {
-                    tableName = tableAttr.Name;
-                    dbName = tableAttr.DataBaseName;
+                    tableName = StringHelper.ToPlural(entityType.Name);
+                }
+                var dbTableAttr = (DataBaseAttribute)entityType.GetCustomAttributes(_dataBaseAttrType, true).FirstOrDefault();
+                if (dbTableAttr != null)
+                {
+                    dbName = dbTableAttr.Name;
                 }
                 table.DataBase = dbName;
                 table.Name = tableName;

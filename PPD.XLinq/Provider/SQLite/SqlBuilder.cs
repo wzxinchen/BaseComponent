@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Xinchen.DbUtils.DynamicExpression;
 using Xinchen.Utils;
 namespace PPD.XLinq.Provider.SQLite
 {
@@ -228,10 +227,6 @@ namespace PPD.XLinq.Provider.SQLite
                     string col = FormatColumn(column);
                     fields.Add(col);
                 }
-                if (_context.Pager)
-                {
-                    fields.Add(string.Format("ROW_NUMBER() OVER({0}) #index", FormatSortColumns()));
-                }
                 return (string.Join(",", fields));
             }
         }
@@ -284,6 +279,10 @@ namespace PPD.XLinq.Provider.SQLite
 
         void BuildSelectSql()
         {
+            if (_context.NoLockTables.Any())
+            {
+                throw new Exception("暂不支持NOLock");
+            }
             var columns = _context.Columns;
             var conditions = _context.Conditions;
             var joins = _context.Joins;
@@ -292,11 +291,6 @@ namespace PPD.XLinq.Provider.SQLite
             if (_context.Distinct)
             {
                 selectBuilder.Append(" DISTINCT ");
-            }
-
-            else if (_context.Take > 0)
-            {
-                selectBuilder.Append(" TOP " + _context.Take + " ");
             }
             var whereBuilder = new StringBuilder();
             var sortBuilder = new StringBuilder();
@@ -388,28 +382,21 @@ namespace PPD.XLinq.Provider.SQLite
                 sqlBuilder.AppendFormat("{0} {1} {2} {3}", selectBuilder.ToString(), fromBuilder.ToString(), whereBuilder.ToString(), sortBuilder.ToString());
             }
 
-            var sql = sqlBuilder.ToString();
             if (_context.Pager)
             {
-                sqlBuilder.Clear();
-                var fields = new List<string>();
-                foreach (var item in _context.Columns)
-                {
-                    fields.Add(string.Format("[_indexTable].[{0}]", item.Alias ?? item.MemberInfo.Name));
-                }
-                sqlBuilder.AppendFormat("SELECT {0} FROM ({1}) _indexTable where [_indexTable].[#index] BETWEEN {2} AND {3}", string.Join(",", fields), sql, _context.Skip, _context.Take);
-                sql = sqlBuilder.ToString();
+                sqlBuilder.AppendFormat(" LIMIT {0},{1}", _context.Skip, _context.Take);
             }
+            else if (_context.Take > 0)
+            {
+                selectBuilder.Append(" LIMIT " + _context.Take + " ");
+            }
+            var sql = sqlBuilder.ToString();
             _result.CommandText = sql;
         }
 
         public override string GetTableName(Table table)
         {
             var tableName = string.Empty;
-            if (!string.IsNullOrWhiteSpace(table.DataBase))
-            {
-                tableName = string.Format("[{0}].DBO.", table.DataBase);
-            }
             tableName = string.Format("{0}[{1}]", tableName, table.Name);
             return tableName;
         }
@@ -487,23 +474,19 @@ namespace PPD.XLinq.Provider.SQLite
         public override string GetTableName(SchemaModel.Table table)
         {
             var tableName = string.Empty;
-            if (!string.IsNullOrWhiteSpace(table.DataBase))
-            {
-                tableName = string.Format("[{0}].DBO.", table.DataBase);
-            }
             tableName = string.Format("{0}[{1}]", tableName, table.Name);
             return tableName;
         }
 
-        string FormatConverter(bool isColumnCaller, string rawConverter, string converter, string param)
+        string FormatConverter(bool isColumnCaller, string rawConverter, string converter, string num)
         {
             if (isColumnCaller)
             {
-                converter = string.Format(rawConverter, string.Format(converter, param, "{0}"));
+                converter = string.Format(rawConverter, string.Format(converter, "{0}", num));
             }
             else
             {
-                converter = string.Format(rawConverter, string.Format(converter, "{0}", param));
+                converter = string.Format(rawConverter, string.Format(converter, num, "{0}"));
             }
             return converter;
         }
@@ -520,22 +503,50 @@ namespace PPD.XLinq.Provider.SQLite
                 var columnConverter = column.Converters.Pop();
                 var memberInfo = columnConverter.MemberInfo;
                 var args = columnConverter.Parameters;
+                var paramName = "@" + ParserUtils.GenerateAlias("param");
                 switch (memberInfo.MemberType)
                 {
                     case MemberTypes.Property:
-                        if (ExpressionConsts.NullableType.IsAssignableFrom(memberInfo.DeclaringType) && memberInfo.Name == "Value")
+                        if (TypeHelper.IsNullableType(memberInfo.DeclaringType) && memberInfo.Name == "Value")
                         {
                             continue;
                         }
-                        if (memberInfo.DeclaringType == ExpressionConsts.DateTimeNullableType || memberInfo.DeclaringType == ExpressionConsts.DateTimeType)
+                        if (memberInfo.DeclaringType == ReflectorConsts.DateTimeNullableType || memberInfo.DeclaringType == ReflectorConsts.DateTimeType)
                         {
-                            converter = string.Format(converter, "CONVERT(DATE,{0},211)");
+                            converter = string.Format(converter, "DATE({0})");
+                            continue;
+                        }
+                        else if (memberInfo.DeclaringType == ReflectorConsts.TimeSpanType)
+                        {
+                            var unit = 1;
+                            switch (memberInfo.Name)
+                            {
+                                case "TotalDays":
+                                    unit = 1;
+                                    break;
+                                case "TotalHours":
+                                    unit = 12;
+                                    break;
+                                case "TotalMilliseconds":
+                                    unit = 12 * 60 * 60 * 1000;
+                                    break;
+                                case "TotalMinutes":
+                                    unit = 12 * 60;
+                                    break;
+                                case "TotalSeconds":
+                                    unit = 12 * 60 * 60;
+                                    break;
+                                default:
+                                    throw new Exception("不支持");
+                            }
+                            converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "((JULIANDAY('{0}') - JULIANDAY('{1}'))*" + unit + ")", paramName);
+                            //converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEDIFF(" + unit + ",{1},{0})", paramName);
+                            _result.Parameters.Add(paramName, args[0]);
                             continue;
                         }
                         throw new Exception("不支持");
                     case MemberTypes.Method:
-                        var paramName = "@" + ParserUtils.GenerateAlias("param");
-                        if (memberInfo.DeclaringType == ExpressionConsts.StringType)
+                        if (memberInfo.DeclaringType == ReflectorConsts.StringType)
                         {
                             switch (memberInfo.Name)
                             {
@@ -552,7 +563,7 @@ namespace PPD.XLinq.Provider.SQLite
                                     {
                                         if (columnConverter.IsInstanceColumn)
                                         {
-                                            converter = string.Format(converter, "SUBSTRING({0}," + (Convert.ToInt32(columnConverter.Parameters[0]) + 1) + ",LEN({0})+1-" + columnConverter.Parameters[0] + ")");
+                                            converter = string.Format(converter, "SUBSTR({0}," + (Convert.ToInt32(columnConverter.Parameters[0]) + 1) + ")");
                                         }
                                         else
                                         {
@@ -563,7 +574,7 @@ namespace PPD.XLinq.Provider.SQLite
                                     {
                                         if (columnConverter.IsInstanceColumn)
                                         {
-                                            converter = string.Format(converter, "SUBSTRING({0}," + (Convert.ToInt32(columnConverter.Parameters[0]) + 1) + "," + columnConverter.Parameters[1] + ")");
+                                            converter = string.Format(converter, "SUBSTR({0}," + (Convert.ToInt32(columnConverter.Parameters[0]) + 1) + "," + columnConverter.Parameters[1] + ")");
                                         }
                                         else
                                         {
@@ -580,44 +591,57 @@ namespace PPD.XLinq.Provider.SQLite
                             }
                             continue;
                         }
-                        else if (memberInfo.DeclaringType == ExpressionConsts.DateTimeType || memberInfo.DeclaringType == ExpressionConsts.DateTimeNullableType)
+                        else if (memberInfo.DeclaringType == ReflectorConsts.DateTimeType || memberInfo.DeclaringType == ReflectorConsts.DateTimeNullableType)
                         {
+                            var num = args[0].ToString();
                             switch (memberInfo.Name)
                             {
                                 case "AddDays":
-                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(DAY,{0},{1})", paramName);
-                                    _result.Parameters.Add(paramName, args[0]);
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATE('{0}','{1} DAYS')", num);
+                                    //if (columnConverter.IsInstanceColumn)
+                                    //{
+                                    //    converter = string.Format(converter, "DATE('{0}','" + num + " DAYS')");
+                                    //}
+                                    //else
+                                    //{
+                                    //    converter = string.Format(converter, "DATE('" + paramName + "','{0} DAYS')");
+                                    //}
                                     break;
                                 case "AddHours":
-                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(HOUR,{0},{1})", paramName);
-                                    _result.Parameters.Add(paramName, args[0]);
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATE('{0}','{1} HOURS')", num);
+                                    //converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(HOUR,{0},{1})", paramName);
+                                    //_result.Parameters.Add(paramName, args[0]);
                                     break;
                                 case "AddYears":
-                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(YEAR,{0},{1})", paramName);
-                                    _result.Parameters.Add(paramName, args[0]);
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATE('{0}','{1} YEARS')", num);
+                                    //converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(YEAR,{0},{1})", paramName);
+                                    //_result.Parameters.Add(paramName, args[0]);
                                     break;
                                 case "AddMonths":
-                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MONTH,{0},{1})", paramName);
-                                    _result.Parameters.Add(paramName, args[0]);
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATE('{0}','{1} MONTHS')", num);
+                                    //converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MONTH,{0},{1})", paramName);
+                                    //_result.Parameters.Add(paramName, args[0]);
                                     break;
                                 case "AddSeconds":
-                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(SECOND,{0},{1})", paramName);
-                                    _result.Parameters.Add(paramName, args[0]);
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATE('{0}','{1} SECONDS')", num);
+                                    //converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(SECOND,{0},{1})", paramName);
+                                    //_result.Parameters.Add(paramName, args[0]);
                                     break;
                                 case "AddMilliseconds":
-                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MILLISECOND,{0},{1})", paramName);
-                                    _result.Parameters.Add(paramName, args[0]);
-                                    break;
+                                    throw new Exception("不支持");
+                                //converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MILLISECOND,{0},{1})", paramName);
+                                //_result.Parameters.Add(paramName, args[0]);
                                 case "AddMinutes":
-                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MINUTE,{0},{1})", paramName);
-                                    _result.Parameters.Add(paramName, args[0]);
+                                    converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATE('{0}','{1} MINUTES')", num);
+                                    //converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEADD(MINUTE,{0},{1})", paramName);
+                                    //_result.Parameters.Add(paramName, args[0]);
                                     break;
                                 default:
                                     throw new Exception("不支持");
                             }
                             continue;
                         }
-                        else if (memberInfo.DeclaringType == ExpressionConsts.EnumerableType)
+                        else if (memberInfo.DeclaringType == ReflectorConsts.EnumerableType)
                         {
                             switch (memberInfo.Name)
                             {

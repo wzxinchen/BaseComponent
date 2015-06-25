@@ -7,8 +7,9 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.DbUtils;
+using Xinchen.Utils;
 
-namespace Xinchen.DbUtils.DynamicExpression
+namespace Xinchen.DbUtils
 {
     public class ExpressionBuilder<TParameter>
     {
@@ -42,7 +43,7 @@ namespace Xinchen.DbUtils.DynamicExpression
         public BinaryExpression BuildBinaryExpression(string key, object value, Operation operation)
         {
             Expression propertyExp = Expression.Property(_parameterExpression, key);
-            if (propertyExp.Type.IsGenericType && propertyExp.Type.GetGenericTypeDefinition() == ExpressionConsts.NullableType)
+            if (TypeHelper.IsNullableType(propertyExp.Type))
             {
                 propertyExp = Expression.Convert(propertyExp, value.GetType());
             }
@@ -132,9 +133,9 @@ namespace Xinchen.DbUtils.DynamicExpression
             var valueExp = Expression.Constant(value);
             if (value is string)
             {
-                return Expression.Call(propertyExp, ExpressionConsts.StringContains, valueExp);
+                return Expression.Call(propertyExp, ReflectorConsts.StringContains, valueExp);
             }
-            return Expression.Call(null, ExpressionConsts.IEnumerableListContains.MakeGenericMethod(ExpressionConsts.Int32Type), valueExp, propertyExp);
+            return Expression.Call(null, ReflectorConsts.IEnumerableListContains.MakeGenericMethod(ReflectorConsts.Int32Type), valueExp, propertyExp);
         }
 
         public IQueryable<TParameter> Build(IQueryable<TParameter> source, IList<Sort> sorts)
@@ -149,15 +150,15 @@ namespace Xinchen.DbUtils.DynamicExpression
                 {
                     case SortOrder.ASC:
                         if (first)
-                            sortMethod = ExpressionConsts.OrderByMethod.MakeGenericMethod(_parameterType, propertyType);
+                            sortMethod = ReflectorConsts.OrderByMethod.MakeGenericMethod(_parameterType, propertyType);
                         else
-                            sortMethod = ExpressionConsts.ThenByMethod.MakeGenericMethod(_parameterType, propertyType);
+                            sortMethod = ReflectorConsts.ThenByMethod.MakeGenericMethod(_parameterType, propertyType);
                         break;
                     case SortOrder.DESCENDING:
                         if (first)
-                            sortMethod = ExpressionConsts.OrderByDescendingMethod.MakeGenericMethod(_parameterType, propertyType);
+                            sortMethod = ReflectorConsts.OrderByDescendingMethod.MakeGenericMethod(_parameterType, propertyType);
                         else
-                            sortMethod = ExpressionConsts.ThenByDescendingMethod.MakeGenericMethod(_parameterType, propertyType);
+                            sortMethod = ReflectorConsts.ThenByDescendingMethod.MakeGenericMethod(_parameterType, propertyType);
                         break;
                     default:
                         throw new Exception(sort.SortOrder.ToString());

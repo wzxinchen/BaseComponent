@@ -43,7 +43,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Attributes\TableAttribute.cs" />
     <Compile Include="BuilderContext.cs" />
     <Compile Include="ConfigSection.cs" />
     <Compile Include="DataContext.cs" />

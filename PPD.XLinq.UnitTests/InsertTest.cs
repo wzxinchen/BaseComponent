@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PPD.XLinq.UnitTests.Model;
 using System.Linq;
 using System.Diagnostics;
+using Xinchen.DbUtils;
 namespace PPD.XLinq.UnitTests
 {
     [TestClass]

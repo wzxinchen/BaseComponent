@@ -10,11 +10,28 @@ namespace Xinchen.Utils
     {
         public static Type GetUnderlyingType(Type type)
         {
-            if(!type.IsGenericType)
+            if (!type.IsGenericType)
             {
                 return type;
             }
             return Nullable.GetUnderlyingType(type) ?? type;
+        }
+
+        public static bool IsNullableType(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException("type");
+            }
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+            if (type.GetGenericTypeDefinition() == ReflectorConsts.NullableType)
+            {
+                return true;
+            }
+            return false;
         }
     }
 }

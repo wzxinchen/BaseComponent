@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using PPD.XLinq;
+using Xinchen.DbUtils;
 using Xinchen.Utils;
 using System.Collections.Generic;
 namespace PPD.XLinq.UnitTests
@@ -546,7 +547,7 @@ namespace PPD.XLinq.UnitTests
 
         bool Test1()
         {
-            return DateTime.Today.Day != 1;
+            return DateTime.Today.Day == 1;
         }
 
         [TestMethod]
@@ -650,25 +651,25 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void ColumnDateDiffHourObject()
         {
-            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalHours + DateTime.Now.Day > 5 select user;
+            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalHours + DateTime.Now.Day > 50 select user;
             query.Average(x => x.Id);
         }
         [TestMethod]
         public void ColumnDateDiffMillisecondsObject()
         {
-            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalMilliseconds + DateTime.Now.Day > 5 select user;
+            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalMilliseconds + DateTime.Now.Day > 50 select user;
             query.Average(x => x.Id);
         }
         [TestMethod]
         public void ColumnDateDiffMinutesObject()
         {
-            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalMinutes + DateTime.Now.Day > 5 select user;
+            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalMinutes + DateTime.Now.Day > 50 select user;
             query.Average(x => x.Id);
         }
         [TestMethod]
         public void ColumnDateDiffSecondsObject()
         {
-            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalSeconds + DateTime.Now.Day > 5 select user;
+            var query = from user in db.Set<User>() where (user.LastLoginDate.Value - DateTime.Now).TotalSeconds + DateTime.Now.Day > 50 select user;
             query.Average(x => x.Id);
         }
 
@@ -706,10 +707,10 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void Page()
         {
-            var query = (from user in db.Set<User>().NoLock()
-                         join order in db.Set<TransferOrder>().NoLock() on user.Id equals order.ToUserId into us
+            var query = (from user in db.Set<User>()
+                         join order in db.Set<TransferOrder>() on user.Id equals order.ToUserId into us
                          from u in us.DefaultIfEmpty()
-                         join flow in db.Set<TransferWorkFlow>().NoLock() on u.ToUserId equals flow.UploadUserId
+                         join flow in db.Set<TransferWorkFlow>() on u.ToUserId equals flow.UploadUserId
                          join user1 in db.Set<User>().NoLock() on user.Password equals user1.Username into test
                          from t in test.DefaultIfEmpty()
                          where flow.UploadUserId == 1 && t.Username == "xxxx"

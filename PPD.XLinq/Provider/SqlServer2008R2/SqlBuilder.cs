@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Xinchen.DbUtils.DynamicExpression;
 using Xinchen.Utils;
 namespace PPD.XLinq.Provider.SqlServer2008R2
 {
@@ -526,16 +525,23 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                 switch (memberInfo.MemberType)
                 {
                     case MemberTypes.Property:
-                        if (ExpressionConsts.NullableType.IsAssignableFrom(memberInfo.DeclaringType) && memberInfo.Name == "Value")
+                        if (TypeHelper.IsNullableType(memberInfo.DeclaringType) && memberInfo.Name == "Value")
                         {
                             continue;
                         }
-                        if (memberInfo.DeclaringType == ExpressionConsts.DateTimeNullableType || memberInfo.DeclaringType == ExpressionConsts.DateTimeType)
+                        if (memberInfo.DeclaringType == ReflectorConsts.DateTimeNullableType || memberInfo.DeclaringType == ReflectorConsts.DateTimeType)
                         {
-                            converter = string.Format(converter, "CONVERT(DATE,{0},211)");
+                            switch (memberInfo.Name)
+                            {
+                                case "Date":
+                                    converter = string.Format(converter, "CONVERT(DATE,{0},211)");
+                                    break;
+                                default:
+                                    throw new Exception("不支持");
+                            }
                             continue;
                         }
-                        else if (memberInfo.DeclaringType == ExpressionConsts.TimeSpanType)
+                        else if (memberInfo.DeclaringType == ReflectorConsts.TimeSpanType)
                         {
                             var unit = string.Empty;
                             switch (memberInfo.Name)
@@ -556,7 +562,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                                     unit = "SECOND";
                                     break;
                                 default:
-                                    throw new Exception();
+                                    throw new Exception("不支持");
                             }
                             converter = FormatConverter(columnConverter.IsInstanceColumn, converter, "DATEDIFF(" + unit + ",{1},{0})", paramName);
                             _result.Parameters.Add(paramName, args[0]);
@@ -564,7 +570,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                         }
                         throw new Exception("不支持");
                     case MemberTypes.Method:
-                        if (memberInfo.DeclaringType == ExpressionConsts.StringType)
+                        if (memberInfo.DeclaringType == ReflectorConsts.StringType)
                         {
                             switch (memberInfo.Name)
                             {
@@ -609,7 +615,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                             }
                             continue;
                         }
-                        else if (memberInfo.DeclaringType == ExpressionConsts.DateTimeType || memberInfo.DeclaringType == ExpressionConsts.DateTimeNullableType)
+                        else if (memberInfo.DeclaringType == ReflectorConsts.DateTimeType || memberInfo.DeclaringType == ReflectorConsts.DateTimeNullableType)
                         {
                             switch (memberInfo.Name)
                             {
@@ -646,7 +652,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                             }
                             continue;
                         }
-                        else if (memberInfo.DeclaringType == ExpressionConsts.EnumerableType)
+                        else if (memberInfo.DeclaringType == ReflectorConsts.EnumerableType)
                         {
                             switch (memberInfo.Name)
                             {

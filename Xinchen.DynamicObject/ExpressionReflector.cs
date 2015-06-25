@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using Xinchen.Utils;
 
 namespace Xinchen.DynamicObject
 {
@@ -200,13 +201,45 @@ namespace Xinchen.DynamicObject
                     if (!_objectConstructors.TryGetValue(type, out ctorDelegate))
                     {
                         var ctorInfo = type.GetConstructors()[0];
-                        var parameterExp = Expression.Parameter(typeof(object[]));
+                        var parameterExp = Expression.Parameter(ReflectorConsts.ObjectArrayType);
                         List<Expression> expList = new List<Expression>();
                         var parameterList = ctorInfo.GetParameters();
                         for (int i = 0; i < parameterList.Length; i++)
                         {
+                            var parameter = parameterList[i];
                             var paramObj = Expression.ArrayIndex(parameterExp, Expression.Constant(i));
-                            var expObj = Expression.Convert(paramObj, parameterList[i].ParameterType);
+                            var nullable = TypeHelper.IsNullableType(parameter.ParameterType);
+                            var parameterType = parameter.ParameterType;
+                            if (nullable)
+                                parameterType = TypeHelper.GetUnderlyingType(parameterType);
+                            Expression expObj = null;
+                            MethodInfo method = null;
+                            if (parameterType == ReflectorConsts.DateTimeType)
+                            {
+                                method = ReflectorConsts.ConvertToDateTimeMethod;
+                                expObj = Expression.Call(null, ReflectorConsts.ConvertToDateTimeMethod, paramObj);
+                            }
+                            else if (parameterType == ReflectorConsts.StringType)
+                            {
+                                method = ReflectorConsts.ConvertToStringMethod;
+                            }
+                            else if (parameterType == ReflectorConsts.Int32Type)
+                            {
+                                method = ReflectorConsts.ConvertToInt32Method;
+                            }
+                            else if (parameterType == ReflectorConsts.BoolType)
+                            {
+                                method = ReflectorConsts.ConvertToBoolMethod;
+                            }
+                            else
+                            {
+                                throw new Exception("不支持：" + parameterType);
+                            }
+                            expObj = Expression.Call(null, method, paramObj);
+                            if (nullable)
+                            {
+                                expObj = Expression.Convert(expObj, ReflectorConsts.NullableType.MakeGenericType(parameterType));
+                            }
                             expList.Add(expObj);
                         }
                         var newExp = Expression.New(ctorInfo, expList.ToArray());

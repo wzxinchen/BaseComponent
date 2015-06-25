@@ -17,7 +17,7 @@ namespace PPD.XLinq.Provider.SQLite
         }
         internal override EntityOperatorBase CreateEntityOperator()
         {
-            throw new NotImplementedException();
+            return new EntityOperator(this);
         }
     }
 }

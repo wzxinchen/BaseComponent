@@ -1,19 +1,21 @@
-﻿using System;
+﻿using PPD.XLinq.Provider.SqlServer2008R2;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xinchen.DynamicObject;
 using Xinchen.Utils;
 namespace PPD.XLinq.Provider.SQLite
 {
-    internal class EntityOperator : EntityOperatorBase
+    internal class EntityOperator : IEntityOperator
     {
         ProviderBase _provider;
-        SqlExecutor _sqlExecutor;
+        SqlExecutorBase _sqlExecutor;
         SqlBuilderBase _sqlBuilder;
         public EntityOperator(ProviderBase provider)
         {
@@ -22,7 +24,7 @@ namespace PPD.XLinq.Provider.SQLite
             _sqlBuilder = _provider.CreateSqlBuilderFactory().CreateSqlBuilder();
         }
         #region 批量插入
-        internal override int InsertEntities(ArrayList list)
+        int IEntityOperator.InsertEntities(ArrayList list)
         {
             if (list.Count <= 0)
             {
@@ -55,31 +57,44 @@ namespace PPD.XLinq.Provider.SQLite
                     maxIndex = Convert.ToInt32(obj);
                 }
             }
-            if (list.Count <= 10)
+            #region 使用Insert语句插入
+            int page, limit = 10;
+            page = (int)Math.Ceiling(list.Count / (double)limit);
+            int pageIndex = 1;
+            var insertStart = "insert into {0}({1}) values{2}";
+            var tableName = string.Empty;
+            if (!string.IsNullOrWhiteSpace(table.DataBase))
             {
-                #region 使用Insert语句插入
-                var insertStart = "insert into {0}({1}) values{2}";
-                var tableName = string.Empty;
-                if (!string.IsNullOrWhiteSpace(table.DataBase))
+                tableName = string.Format("[{0}].", table.DataBase);
+            }
+            tableName = string.Format("[{0}]", table.Name);
+            var fields = new List<string>();
+            var autoincreamentColumn = string.Empty;
+            foreach (var item in table.Columns.Values)
+            {
+                if (item.IsAutoIncreament)
                 {
-                    tableName = string.Format("[{0}]", table.DataBase);
+                    autoincreamentColumn = item.Name;
+                    continue;
                 }
-                tableName = string.Format("dbo.[{0}]", table.Name);
-                var fields = new List<string>();
-                var autoincreamentColumn = string.Empty;
-                foreach (var item in table.Columns.Values)
+                fields.Add(item.Name);
+            }
+            while (pageIndex <= page)
+            {
+                var start = (pageIndex - 1) * limit;
+                ArrayList entities = null;
+                if (start + limit > list.Count)
                 {
-                    if (item.IsAutoIncreament)
-                    {
-                        autoincreamentColumn = item.Name;
-                        continue;
-                    }
-                    fields.Add(item.Name);
+                    entities = list.GetRange(start, list.Count - start);
+                }
+                else
+                {
+                    entities = list.GetRange(start, limit);
                 }
                 var values = new List<string>();
                 var index = 0;
                 var sqlParameters = new Dictionary<string, object>();
-                foreach (var entity in list)
+                foreach (var entity in entities)
                 {
                     var value = new List<string>();
                     if (!autoIncreament && keySetter != null)
@@ -93,49 +108,30 @@ namespace PPD.XLinq.Provider.SQLite
                             continue;
                         }
                         value.Add(string.Format("@{0}{1}", key, index));
-                        sqlParameters.Add(key + index, getters.Get(key)(entity));
+                        var valueParam = getters.Get(key)(entity);
+                        var dateValue = valueParam as DateTime?;
+                        if (dateValue != null)
+                        {
+                            if (dateValue.Value.Date == dateValue.Value)
+                            {
+                                valueParam = dateValue.Value.ToString("yyyy-MM-dd");
+                            }
+                            else
+                            {
+                                valueParam = dateValue.Value.ToString("yyyy-MM-dd HH:mm:ss");
+                            }
+                        }
+                        sqlParameters.Add(key + index, valueParam);
                     }
                     index++;
                     values.Add(string.Format("({0})", string.Join(",", value)));
                 }
                 insertStart = string.Format(insertStart, tableName, string.Join(",", fields), string.Join(",", values));
-                count = _sqlExecutor.ExecuteNonQuery(insertStart, sqlParameters);
-                #endregion
+                count += _sqlExecutor.ExecuteNonQuery(insertStart, sqlParameters);
+                pageIndex++;
             }
-            else
-            {
-                #region 使用SqlBulkCopy插入
-                var sqlBulkCopy = new SqlBulkCopy(DataContext.ConnectionString);
-                sqlBulkCopy.DestinationTableName = "dbo.[" + table.Name + "]";
-                if (list.Count > 500000)
-                    sqlBulkCopy.BatchSize = list.Count / 10;
-                var dataTable = new DataTable();
-                foreach (var column in table.Columns.Values)
-                {
-                    var dataColumn = new DataColumn();
-                    dataColumn.ColumnName = column.Name;
-                    dataColumn.DataType = TypeHelper.GetUnderlyingType(column.PropertyInfo.PropertyType);
-                    dataTable.Columns.Add(dataColumn);
-                    sqlBulkCopy.ColumnMappings.Add(column.Name, column.Name);
-                }
-                foreach (var item in list)
-                {
-                    var row = dataTable.NewRow();
-                    if (!autoIncreament && keySetter != null)
-                    {
-                        keySetter(item, ++maxIndex);
-                    }
-                    foreach (var key in getters.Keys)
-                    {
-                        row[columns.Get(key).Name] = getters.Get(key)(item);
-                    }
-                    dataTable.Rows.Add(row);
-                }
-                sqlBulkCopy.WriteToServer(dataTable);
-                sqlBulkCopy.Close();
-                #endregion
-                count = list.Count;
-            }
+
+            #endregion
             if (!autoIncreament)
             {
                 _sqlExecutor.ExecuteNonQuery(string.Format("update {0} set [Count]={1} where Name='{2}'", ConfigManager.SequenceTable, maxIndex, table.Name), new Dictionary<string, object>());
@@ -144,7 +140,7 @@ namespace PPD.XLinq.Provider.SQLite
         }
         #endregion
 
-        internal override int UpdateValues(SchemaModel.Column keyColumn, SchemaModel.Table table, Dictionary<string, object> values)
+        int IEntityOperator.UpdateValues(SchemaModel.Column keyColumn, SchemaModel.Table table, Dictionary<string, object> values)
         {
             var keyValue = values.Get(keyColumn.Name);
             if (keyValue == null)
@@ -174,7 +170,7 @@ namespace PPD.XLinq.Provider.SQLite
             return _sqlExecutor.ExecuteNonQuery(updateSql, sqlParameters);
         }
 
-        internal override int Delete(SchemaModel.Column keyColumn, SchemaModel.Table table, params int[] ids)
+        int IEntityOperator.Delete(SchemaModel.Column keyColumn, SchemaModel.Table table, params int[] ids)
         {
             if (ids.Length <= 0) return 0;
             var deleteSql = "DELETE FROM {0} WHERE [{1}] IN ({2})";

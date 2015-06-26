@@ -14,7 +14,6 @@
     using Xinchen.PrivilegeManagement.DTO;
     using Xinchen.PrivilegeManagement.ViewModel;
     using System.Linq.Expressions;
-    using System.Linq.Dynamic;
     public class Privilege
     {
         private Xinchen.PrivilegeManagement.PrivilegeBase _privilegeBase;

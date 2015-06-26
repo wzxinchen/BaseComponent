@@ -10,10 +10,10 @@ using Xinchen.DynamicObject;
 using Xinchen.Utils;
 namespace PPD.XLinq.Provider.SqlServer2008R2
 {
-    internal class EntityOperator : EntityOperatorBase
+    internal class EntityOperator : IEntityOperator
     {
         ProviderBase _provider;
-        SqlExecutor _sqlExecutor;
+        SqlExecutorBase _sqlExecutor;
         SqlBuilderBase _sqlBuilder;
         public EntityOperator()
         {
@@ -22,7 +22,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
             _sqlBuilder = _provider.CreateSqlBuilderFactory().CreateSqlBuilder();
         }
         #region 批量插入
-        internal override int InsertEntities(ArrayList list)
+        int IEntityOperator.InsertEntities(ArrayList list)
         {
             if (list.Count <= 0)
             {
@@ -62,9 +62,9 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
                 var tableName = string.Empty;
                 if (!string.IsNullOrWhiteSpace(table.DataBase))
                 {
-                    tableName = string.Format("[{0}]", table.DataBase);
+                    tableName = string.Format("[{0}].", table.DataBase);
                 }
-                tableName = string.Format("dbo.[{0}]", table.Name);
+                tableName = string.Format("[{0}]", table.Name);
                 var fields = new List<string>();
                 var autoincreamentColumn = string.Empty;
                 foreach (var item in table.Columns.Values)
@@ -144,7 +144,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
         }
         #endregion
 
-        internal override int UpdateValues(SchemaModel.Column keyColumn, SchemaModel.Table table, Dictionary<string, object> values)
+        int IEntityOperator.UpdateValues(SchemaModel.Column keyColumn, SchemaModel.Table table, Dictionary<string, object> values)
         {
             var keyValue = values.Get(keyColumn.Name);
             if (keyValue == null)
@@ -174,7 +174,7 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
             return _sqlExecutor.ExecuteNonQuery(updateSql, sqlParameters);
         }
 
-        internal override int Delete(SchemaModel.Column keyColumn, SchemaModel.Table table, params int[] ids)
+        int IEntityOperator.Delete(SchemaModel.Column keyColumn, SchemaModel.Table table, params int[] ids)
         {
             if (ids.Length <= 0) return 0;
             var deleteSql = "DELETE FROM {0} WHERE [{1}] IN ({2})";

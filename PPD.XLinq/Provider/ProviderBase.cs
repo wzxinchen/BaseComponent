@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PPD.XLinq.Provider.SqlServer2008R2;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -18,21 +19,21 @@ namespace PPD.XLinq.Provider
         {
             get { return _databaseType; }
         }
-        public ProviderBase(DatabaseTypes databaseType)
+        public ProviderBase()
         {
-            _databaseType = databaseType;
+            _databaseType = ConfigManager.DataBaseType;
         }
         public ParserBase CreateParser()
         {
             return new Parser.Parser();
         }
 
-        internal SqlExecutor CreateSqlExecutor()
+        internal virtual SqlExecutorBase CreateSqlExecutor()
         {
-            return new SqlExecutor();
+            return new SqlExecutorBase();
         }
 
-        internal abstract EntityOperatorBase CreateEntityOperator();
+        public abstract IEntityOperator CreateEntityOperator();
         public BuilderFactory CreateSqlBuilderFactory()
         {
             if (!string.IsNullOrWhiteSpace(ConfigManager.SqlBuilder))

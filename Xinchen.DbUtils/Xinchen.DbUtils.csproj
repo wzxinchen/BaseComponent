@@ -55,6 +55,7 @@
     <Compile Include="DynamicSqlParam.cs" />
     <Compile Include="DynamicSqlParamType.cs" />
     <Compile Include="DynamicSqlSorter.cs" />
+    <Compile Include="ExpressionHelper.cs" />
     <Compile Include="Extension.cs" />
     <Compile Include="Filter.cs" />
     <Compile Include="IBLL.cs" />
@@ -66,6 +67,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Xinchen.DynamicObject\Xinchen.DynamicObject.csproj">
+      <Project>{f321b0eb-9c51-428e-97f4-5f8a702ddcc5}</Project>
+      <Name>Xinchen.DynamicObject</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Xinchen.Utils\Xinchen.Utils.csproj">
       <Project>{6be86e93-58b7-463a-a4d9-7f7da8a0089a}</Project>
       <Name>Xinchen.Utils</Name>

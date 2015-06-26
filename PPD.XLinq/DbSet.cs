@@ -64,14 +64,14 @@ namespace PPD.XLinq
             return list;
         }
 
-        public void ClearAdding()
+        void IEntityOperator.ClearAdding()
         {
             lock (_entitiesToAdd)
                 _entitiesToAdd.Clear();
         }
 
 
-        public void AddEditing(IList list)
+        void IEntityOperator.AddEditing(IList list)
         {
             foreach (T item in list)
             {
@@ -84,7 +84,7 @@ namespace PPD.XLinq
         }
 
 
-        public IList GetEditing()
+        IList IEntityOperator.GetEditing()
         {
             var list = new ArrayList();
             foreach (var item in _entitiesToEdit)
@@ -94,13 +94,13 @@ namespace PPD.XLinq
             return list;
         }
 
-        public void ClearEditing()
+        void IEntityOperator.ClearEditing()
         {
             _entitiesToEdit.Clear();
         }
 
 
-        public Type GetEntityType()
+        Type IEntityOperator.GetEntityType()
         {
             return ElementType;
         }
@@ -119,7 +119,7 @@ namespace PPD.XLinq
         }
 
 
-        public IList GetRemoving()
+        IList IEntityOperator.GetRemoving()
         {
             var list = new ArrayList();
             foreach (var item in _entitiesToRemove)
@@ -129,7 +129,7 @@ namespace PPD.XLinq
             return list;
         }
 
-        public void ClearRemoving()
+        void IEntityOperator.ClearRemoving()
         {
             _entitiesToRemove.Clear();
         }

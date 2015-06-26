@@ -100,7 +100,6 @@
     <Compile Include="AppConfig.cs" />
     <Compile Include="Controllers\BaseControllerInternal.cs" />
     <Compile Include="Filters\RequirePrivilegeAttribute.cs" />
-    <Compile Include="Models\ExtNetModel.cs" />
     <Compile Include="Model\AddRoleModel.cs" />
     <Compile Include="Model\AddUserModel.cs" />
     <Compile Include="Model\ChangePasswordModel.cs" />
@@ -125,7 +124,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="packages.config" />
     <None Include="Views\Home\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>

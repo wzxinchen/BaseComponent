@@ -39,7 +39,7 @@ namespace PPD.XLinq
         /// </summary>
         /// <param name="entityType"></param>
         /// <returns></returns>
-        public IEntityOperator GetEntityOperator(Type entityType)
+        internal IEntityOperator GetEntityOperator(Type entityType)
         {
             return (IEntityOperator)_entitieDbSets.Get(entityType);
         }

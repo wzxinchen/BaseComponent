@@ -8,18 +8,14 @@ using System.Threading.Tasks;
 namespace Xinchen.Utils
 {
     /// <summary>
-    /// 提供简单的但不是线程安全的高性能的单例模式
+    /// 提供简单的高性能的单例模式
     /// </summary>
     /// <typeparam name="TObject"></typeparam>
     public static class ObjectCache<TObject>
     {
         public static TObject GetObject()
         {
-            if (Instance == null)
-            {
-                Instance = (TObject)Activator.CreateInstance(typeof(TObject), false);
-            }
-            return Instance;
+            return GetObject(() => (TObject)Activator.CreateInstance(typeof(TObject), false));
         }
         public static TObject GetObject(Func<TObject> createInstanceAction)
         {
@@ -32,13 +28,7 @@ namespace Xinchen.Utils
 
         public static object GetObjectFromCallContext(Type type)
         {
-            object instance = CallContext.GetData(type.FullName);
-            if (instance == null)
-            {
-                instance = Activator.CreateInstance(type);
-                CallContext.SetData(type.FullName, instance);
-            }
-            return instance;
+            return GetObjectFromCallContext(type, x => Activator.CreateInstance(x));
         }
 
         public static object GetObjectFromCallContext(Type type, Func<Type, object> createInstance)

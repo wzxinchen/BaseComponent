@@ -6,16 +6,23 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.Utils;
-namespace PPD.XLinq
+
+namespace PPD.XLinq.Provider
 {
-    public class SqlExecutor
+    public class SqlExecutorBase
     {
         static DbProviderFactory _factory;
         static Dictionary<Type, DbType> _typeMapper = new Dictionary<Type, DbType>();
-        static SqlExecutor()
+        private DbConnection _dbConnection;
+
+        public DbConnection DbConnection
         {
-            _typeMapper.Add(typeof(DateTime), DbType.DateTime2);
-            _typeMapper.Add(typeof(int), DbType.Int32);
+            get { return _dbConnection; }
+        }
+        static SqlExecutorBase()
+        {
+            _typeMapper.Add(ReflectorConsts.DateTimeType, DbType.DateTime2);
+            _typeMapper.Add(ReflectorConsts.Int32Type, DbType.Int32);
             _typeMapper.Add(typeof(short), DbType.Int16);
             _typeMapper.Add(typeof(long), DbType.Int64);
             _typeMapper.Add(typeof(string), DbType.String);
@@ -33,12 +40,42 @@ namespace PPD.XLinq
             _factory = DbProviderFactories.GetFactory(ConfigManager.DbFactoryName);
         }
 
-        DbConnection CreateConnection()
+        protected virtual DbConnection CreateConnection()
         {
-            var dbConnection = _factory.CreateConnection();
-            dbConnection.ConnectionString = DataContext.ConnectionString;
-            dbConnection.Open();
-            return dbConnection;
+            //if (dbConnection != null)
+            //{
+            //    switch (dbConnection.State)
+            //    {
+            //        case ConnectionState.Closed:
+            //            dbConnection.Open();
+            //            break;
+            //        case ConnectionState.Open:
+            //            break;
+            //        default:
+            //            throw new Exception();
+            //    }
+            //    return dbConnection;
+            //}
+            _dbConnection = _factory.CreateConnection();
+            _dbConnection.ConnectionString = DataContext.ConnectionString;
+            _dbConnection.Open();
+            return _dbConnection;
+        }
+
+        protected virtual void Close()
+        {
+            if (_dbConnection != null)
+            {
+                _dbConnection.Dispose();
+                _dbConnection = null;
+            }
+        }
+
+        protected virtual void SetParameter(DbParameter parameter, string parameterName, object value, DbType dbType)
+        {
+            parameter.ParameterName = parameterName;
+            parameter.Value = value;
+            parameter.DbType = dbType;
         }
 
         DbCommand CreateCommand(DbConnection conn, string cmdText, Dictionary<string, object> parameters)
@@ -49,23 +86,24 @@ namespace PPD.XLinq
             foreach (var parameterName in parameters.Keys)
             {
                 var parameter = dbCommand.CreateParameter();
-                parameter.ParameterName = parameterName;
                 var value = parameters.Get(parameterName);
                 if (value != null)
                 {
-                    parameter.Value = value;
-                    var propertyType = parameter.Value.GetType();
+                    var propertyType = value.GetType();
+                    DbType dbType;
                     if (propertyType.IsEnum)
                     {
-                        parameter.DbType = DbType.Int32;
+                        dbType = DbType.Int32;
                     }
                     else
                     {
-                        parameter.DbType = _typeMapper.Get(propertyType);
+                        dbType = _typeMapper.Get(propertyType);
                     }
+                    SetParameter(parameter, parameterName, value, dbType);
                 }
                 else
                 {
+                    parameter.ParameterName = parameterName;
                     parameter.Value = DBNull.Value;
                 }
                 dbCommand.Parameters.Add(parameter);
@@ -80,20 +118,24 @@ namespace PPD.XLinq
             return dbDataAdapter;
         }
 
-        public object ExecuteScalar(string sql, Dictionary<string, object> parameters)
+        public virtual object ExecuteScalar(string sql, Dictionary<string, object> parameters)
         {
             var conn = CreateConnection();
-            using (conn)
+            try
             {
                 var cmd = CreateCommand(conn, sql, parameters);
                 return cmd.ExecuteScalar();
+            }
+            finally
+            {
+                Close();
             }
         }
 
         public DataSet ExecuteDataSet(string sql, Dictionary<string, object> parameters)
         {
             var conn = CreateConnection();
-            using (conn)
+            try
             {
                 var cmd = CreateCommand(conn, sql, parameters);
                 using (cmd)
@@ -107,16 +149,23 @@ namespace PPD.XLinq
                     }
                 }
             }
+            finally
+            {
+                Close();
+            }
         }
         public int ExecuteNonQuery(string sql, Dictionary<string, object> parameters)
         {
             var conn = CreateConnection();
-            using (conn)
+            try
             {
                 var cmd = CreateCommand(conn, sql, parameters);
                 return cmd.ExecuteNonQuery();
             }
+            finally
+            {
+                Close();
+            }
         }
-
     }
 }

@@ -69,6 +69,7 @@
     <Compile Include="Provider\ProviderFactory.cs" />
     <Compile Include="ConfigManager.cs" />
     <Compile Include="Provider\EntityOperatorBase.cs" />
+    <Compile Include="Provider\SqlExecutorBase.cs" />
     <Compile Include="Provider\SQLite\EntityOperator.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -82,6 +83,7 @@
     <Compile Include="Provider\SqlServer2008R2\SqlBuilder.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Provider\SqlServer2008R2\SqlExecutor.cs" />
     <Compile Include="Provider\SqlServer2008R2\SqlServer2008R2Provider.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -93,7 +95,7 @@
     <Compile Include="TranslateModel\ColumnConverter.cs" />
     <Compile Include="TranslateModel\Condition.cs" />
     <Compile Include="TranslateModel\Join.cs" />
-    <Compile Include="SqlExecutor.cs" />
+    <Compile Include="Provider\SQLite\SqlExecutor.cs" />
     <Compile Include="TableInfoManager.cs" />
     <Compile Include="SchemaModel\Table.cs" />
     <Compile Include="TranslateModel\Column.cs">

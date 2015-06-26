@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xinchen.DbUtils;
+using Xinchen.DynamicObject;
 using Xinchen.Utils;
 
 namespace Xinchen.DbUtils
@@ -106,6 +107,7 @@ namespace Xinchen.DbUtils
                     }
                     return Expression.LessThanOrEqual(propertyExp, valueExp);
                 case Operation.NotEqual:
+                    valueExp = Expression.Constant(value);
                     return Expression.NotEqual(propertyExp, valueExp);
                 default:
                     throw new Exception(operation.ToString());
@@ -180,12 +182,26 @@ namespace Xinchen.DbUtils
         public Expression BuildContains(string propertyName, object value)
         {
             var propertyExp = Expression.Property(_parameterExpression, propertyName);
-            var valueExp = Expression.Constant(value);
-            if (value is string)
+            var type = ExpressionHelper.GetMemberType(propertyExp);
+            Expression valueExp = null;
+            if (type == ReflectorConsts.StringType)
             {
+                valueExp = Expression.Constant(value);
                 return Expression.Call(propertyExp, ReflectorConsts.StringContains, valueExp);
             }
-            return Expression.Call(null, ReflectorConsts.IEnumerableListContains.MakeGenericMethod(ReflectorConsts.Int32Type), valueExp, propertyExp);
+            else if (type.IsEnum)
+            {
+                var values = (IList)value;
+                var valueArray = Array.CreateInstance(type, values.Count);
+                var index = 0;
+                foreach (var enumValueObject in values)
+                {
+                    valueArray.SetValue(Enum.Parse(type, Convert.ToString(enumValueObject)), index++);
+                }
+                value = valueArray;
+            }
+            valueExp = Expression.Constant(value);
+            return Expression.Call(null, ReflectorConsts.IEnumerableListContains.MakeGenericMethod(type), valueExp, propertyExp);
         }
 
         public IQueryable<TParameter> Build(IQueryable<TParameter> source, IList<Sort> sorts)

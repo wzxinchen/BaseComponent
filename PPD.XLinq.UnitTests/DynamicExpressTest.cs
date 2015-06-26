@@ -42,7 +42,8 @@ namespace PPD.XLinq.UnitTests
             filters.Add(SqlFilter.Create("Username", Operation.Like, "aaaa"));
             filters.Add(SqlFilter.Create("Id", Operation.List, new int[] { 1, 2, 3 }));
             filters.Add(SqlFilter.Create("Password", Operation.NotEqual, "1"));
-            var where = builder.Build(filters);
+            filters.Add(SqlFilter.Create("Status", Operation.List, new int[] { 1 }));
+            var where = builder.Build(filters, new Dictionary<string, string>());
             var results = db.Set<User>().Where(where).ToList();
             Console.WriteLine(results.Count + "条数据");
         }

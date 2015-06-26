@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Xinchen.ApplicationBase.Mvc
+namespace PPD.XLinq.Provider.SqlServer2008R2
 {
-    public class Class1
+    public class SqlExecutor:SqlExecutorBase
     {
     }
 }

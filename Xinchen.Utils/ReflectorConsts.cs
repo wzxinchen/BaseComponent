@@ -16,6 +16,7 @@ namespace Xinchen.Utils
         public static readonly Type BoolType = typeof(bool);
         public static readonly Type ConvertType = typeof(Convert);
         public static readonly Type IEnumerableType = typeof(IEnumerable<>);
+        public static readonly Type ListType = typeof(List<>);
         public static readonly Type EnumerableType = typeof(Enumerable);
         public static readonly Type QueryableType = typeof(Queryable);
 

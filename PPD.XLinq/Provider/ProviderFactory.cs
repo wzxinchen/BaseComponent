@@ -31,7 +31,7 @@ namespace PPD.XLinq.Provider
         {
             return CreateProvider(ConfigManager.DataBaseType);
         }
-        internal static ProviderBase CreateProvider(DatabaseTypes databaseType)
+        public static ProviderBase CreateProvider(DatabaseTypes databaseType)
         {
             if (_type == null)
             {

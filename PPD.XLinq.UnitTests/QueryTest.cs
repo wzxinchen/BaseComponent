@@ -309,15 +309,16 @@ namespace PPD.XLinq.UnitTests
             query.ToList();
         }
 
-        public enum T
-        {
-            A = 1, B = 1
-        }
-
         [TestMethod]
         public void ColumnContainsString()
         {
             db.Set<User>().Where(x => x.Password.Contains("xxxxxxxxxxxx")).ToList();
+        }
+        [TestMethod]
+        public void ContainsEnum()
+        {
+            var enums = new T[] { T.A };
+            db.Set<User>().Where(x => enums.Contains(x.Status)).ToList();
         }
         [TestMethod]
         public void SelectWhereSearch()
@@ -599,8 +600,8 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void DateAddDay()
         {
-            var query = from user in db.Set<User>() where user.LastLoginDate.Value.AddDays(1) <= DateTime.Now.Date select user;
-            query.Average(x => x.Id);
+            var query = from user in db.Set<User>() where user.LastLoginDate.Value.AddDays(1).Date <= DateTime.Now.Date select user;
+            Console.WriteLine(query.Count());
         }
         [TestMethod]
         public void DateAddHour()
@@ -647,10 +648,16 @@ namespace PPD.XLinq.UnitTests
             query.Average(x => x.Id);
         }
         [TestMethod]
-        public void OrderBy()
+        public void OrderByObjectAddColumn()
         {
             var query = from user in db.Set<User>() where DateTime.Now.AddDays(user.Id) <= DateTime.Now.Date orderby user.Id descending select user;
-            query.ToList();
+            Console.WriteLine(query.Count());
+        }
+        [TestMethod]
+        public void OrderByObjectAddMillionSeconds()
+        {
+            var query = from user in db.Set<User>() where DateTime.Now.AddMilliseconds(user.Id) <= DateTime.Now.Date orderby user.Id descending select user;
+            Console.WriteLine(query.Count());
         }
 
         [TestMethod]
@@ -689,7 +696,7 @@ namespace PPD.XLinq.UnitTests
         public void ForceConvert()
         {
             var query = from user in db.Set<User>() where ((DateTime)user.LastLoginDate).AddDays(1) <= DateTime.Now.Date select user;
-            query.Average(x => x.Id);
+            Console.WriteLine(query.Count());
         }
 
 
@@ -749,5 +756,10 @@ namespace PPD.XLinq.UnitTests
             db.Set<User>().Any();
             db.Set<User>().Any(x => x.Id == 1);
         }
+    }
+
+    public enum T
+    {
+        A = 1, B = 1
     }
 }

@@ -18,10 +18,10 @@ namespace PPD.XLinq
                 return databaseType.HasValue ? databaseType.Value : (databaseType = (DatabaseTypes)Enum.Parse(typeof(DatabaseTypes), DataBase)).Value;
             }
         }
-        public static string DataBase { get; internal set; }
+        public static string DataBase { get; set; }
 
         public static string ConnectionStringName { get; internal set; }
-        public static string DbFactoryName { get; internal set; }
+        public static string DbFactoryName { get; set; }
 
         public static string SequenceTable { get; internal set; }
         public static string SqlBuilder { get; internal set; }

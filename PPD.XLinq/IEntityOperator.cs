@@ -6,7 +6,7 @@ using System.Text;
 
 namespace PPD.XLinq
 {
-    public interface IEntityOperator
+    interface IEntityOperator
     {
         ArrayList GetAdding();
         void ClearAdding();

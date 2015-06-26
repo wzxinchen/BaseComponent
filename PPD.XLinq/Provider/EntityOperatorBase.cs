@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace PPD.XLinq.Provider
 {
-    internal abstract class EntityOperatorBase
+    public interface IEntityOperator
     {
-        internal abstract int InsertEntities(ArrayList list);
-        internal abstract int UpdateValues(Column keyColumn, Table table, Dictionary<string,object> values);
+        int InsertEntities(ArrayList list);
+        int UpdateValues(Column keyColumn, Table table, Dictionary<string,object> values);
 
-        internal abstract int Delete(Column keyColumn, Table table, params int[] ids);
+        int Delete(Column keyColumn, Table table, params int[] ids);
     }
 }

@@ -59,6 +59,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PPD.XLinq.UnitTests", "PPD.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicObjectUnitTests", "DynamicObjectUnitTests\DynamicObjectUnitTests.csproj", "{CC131D14-8D44-4BE2-9D79-18815DE13A3C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{4932FB3E-7475-49B7-9FCD-1746D4F1456A}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApplication1", "ConsoleApplication1\ConsoleApplication1.csproj", "{CB4726C6-DA05-4110-8B0E-879E1E7E4D59}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -157,6 +166,10 @@ Global
 		{CC131D14-8D44-4BE2-9D79-18815DE13A3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC131D14-8D44-4BE2-9D79-18815DE13A3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC131D14-8D44-4BE2-9D79-18815DE13A3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB4726C6-DA05-4110-8B0E-879E1E7E4D59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB4726C6-DA05-4110-8B0E-879E1E7E4D59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB4726C6-DA05-4110-8B0E-879E1E7E4D59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB4726C6-DA05-4110-8B0E-879E1E7E4D59}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

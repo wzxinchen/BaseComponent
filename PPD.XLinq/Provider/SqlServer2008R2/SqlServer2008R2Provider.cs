@@ -14,12 +14,11 @@ namespace PPD.XLinq.Provider.SqlServer2008R2
     public class SqlServer2008R2Provider : ProviderBase
     {
         public SqlServer2008R2Provider()
-            : base(DatabaseTypes.SqlServer2008R2)
         {
 
         }
 
-        internal override EntityOperatorBase CreateEntityOperator()
+        public override IEntityOperator CreateEntityOperator()
         {
             return new EntityOperator();
         }

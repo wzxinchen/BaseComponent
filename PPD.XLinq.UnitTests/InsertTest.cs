@@ -4,6 +4,9 @@ using PPD.XLinq.UnitTests.Model;
 using System.Linq;
 using System.Diagnostics;
 using Xinchen.DbUtils;
+using PPD.XLinq.Provider;
+using System.Collections;
+using System.Transactions;
 namespace PPD.XLinq.UnitTests
 {
     [TestClass]
@@ -20,7 +23,10 @@ namespace PPD.XLinq.UnitTests
                 {
                     LastLoginDate = DateTime.Now,
                     Password = "111",
-                    Username = "zzzz"
+                    Username = "zzzz",
+                    CreateTime = DateTime.Now,
+                    IsEnabled = false,
+                    Status = T.A
                 });
             }
             db.SaveChanges();
@@ -208,17 +214,26 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void InsertSmallData()
         {
-            var dbUser = db.Set<User>();
-            for (int i = 0; i < 5; i++)
+            using (var scope = new TransactionScope())
             {
-                dbUser.Add(new User()
+                using (var scope1 = new TransactionScope())
                 {
-                    LastLoginDate = DateTime.Now,
-                    Password = "111",
-                    Username = "zzzz"
-                });
+                    var dbUser = db.Set<User>();
+                    for (int i = 0; i < 5; i++)
+                    {
+                        dbUser.Add(new User()
+                        {
+                            LastLoginDate = DateTime.Now,
+                            Password = "111",
+                            Username = "zzzz",
+                            CreateTime = DateTime.Now
+                        });
+                    }
+                    db.SaveChanges();
+                    scope1.Complete();
+                }
+                scope.Complete();
             }
-            db.SaveChanges();
         }
         [TestMethod]
         public void InsertSmallIdentityData()
@@ -238,7 +253,7 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void QueryUpdate()
         {
-            var user =  db.Set<User>().FirstOrDefault();
+            var user = db.Set<User>().FirstOrDefault();
             user.IsEnabled = false;
             user.LastLoginDate = DateTime.Now.Date;
             user.Password = "xxxxxx";
@@ -258,12 +273,12 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void QueryUpdateMultiEntity()
         {
-            var user =  db.Set<User>().FirstOrDefault(x => x.Id == 17);
+            var user = db.Set<User>().FirstOrDefault(x => x.Id == 7);
             user.IsEnabled = false;
             user.LastLoginDate = DateTime.Now.Date;
             user.Password = "password1";
             user.Username = "username1";
-            user = db.Set<User>().FirstOrDefault(x => x.Id == 18);
+            user = db.Set<User>().FirstOrDefault(x => x.Id == 8);
             user.Password = "password2";
             user.Username = "username2";
             db.SaveChanges();
@@ -271,10 +286,10 @@ namespace PPD.XLinq.UnitTests
         [TestMethod]
         public void QueryDelete()
         {
-            var user = db.Set<User>().FirstOrDefault(x => x.Id == 11);
+            var user = db.Set<User>().FirstOrDefault(x => x.Id == 10);
             db.Set<User>().Remove(user);
-            user = db.Set<User>().FirstOrDefault(x => x.Id == 12);
-            db.Set<User>().Remove(user);
+            //user = db.Set<User>().FirstOrDefault(x => x.Id == 5);
+            //db.Set<User>().Remove(user);
             db.SaveChanges();
         }
 
